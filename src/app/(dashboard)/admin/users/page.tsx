@@ -6,6 +6,7 @@ import { RoleSelect } from './RoleSelect'
 import { SubToggle } from './SubToggle'
 import { LicenseToggle } from './LicenseToggle'
 import { CreateUserForm } from './CreateUserForm'
+import { DeleteUserButton } from './DeleteUserButton'
 
 export default async function AdminUsersPage() {
   const admin = await isAdmin()
@@ -111,7 +112,7 @@ export default async function AdminUsersPage() {
                         <CreateProfileButton userId={u.id} />
                       )}
                     </td>
-                    <td className="px-5 py-3 flex gap-2">
+                    <td className="px-5 py-3 flex items-center gap-2">
                       {profile ? (
                         <>
                           {profile.role !== 'ADMIN' && (
@@ -120,8 +121,9 @@ export default async function AdminUsersPage() {
                           <RoleSelect userId={u.id} currentRole={profile.role} />
                         </>
                       ) : (
-                        <span className="text-white/20 text-xs">—</span>
+                        <span className="text-white/20 text-xs mr-2">—</span>
                       )}
+                      <DeleteUserButton userId={u.id} userEmail={u.email ?? '—'} />
                     </td>
                   </tr>
                 )
