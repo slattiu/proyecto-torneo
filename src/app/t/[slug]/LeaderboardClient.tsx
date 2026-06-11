@@ -886,7 +886,7 @@ export function LeaderboardClient({
             </table>
           </div>
         </div>
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-3 lg:sticky lg:top-24 space-y-6">
           <AdPlacement banners={adBanners || []} slotName="leaderboard_sidebar" />
         </div>
       </div>
