@@ -245,7 +245,11 @@ export async function recalculateStandings(supabase: any, tournamentId: string) 
     const { error: pErr } = await supabase.from('participants').upsert(playerUpdates)
     if (pErr) console.error(`[STANDINGS] Participant KILLS Update ERROR:`, pErr)
   }
+
+  // Auto-sync streamer live viewers
+  await syncTournamentViewers(supabase, tournamentId)
 }
+
 
 export async function syncStandings(tournamentId: string): Promise<{ success: boolean } | { error: string }> {
   try {
@@ -433,3 +437,97 @@ export async function processAIValidation(
     }
   }
 }
+
+export async function syncTournamentViewers(supabase: any, tournamentId: string): Promise<number> {
+  try {
+    // 1. Fetch all teams and participants stream URLs for this tournament
+    const { data: teams } = await supabase
+      .from('teams')
+      .select('stream_url, participants(stream_url)')
+      .eq('tournament_id', tournamentId)
+
+    if (!teams) return 0
+
+    const urls: string[] = []
+    for (const t of teams) {
+      if (t.stream_url) urls.push(t.stream_url)
+      if (t.participants) {
+        for (const p of t.participants) {
+          if (p.stream_url) urls.push(p.stream_url)
+        }
+      }
+    }
+
+    // Filter unique URLs
+    const uniqueUrls = Array.from(new Set(urls.map(u => u.trim()).filter(Boolean)))
+    if (uniqueUrls.length === 0) {
+      await supabase.from('tournaments').update({ total_live_viewers: 0 }).eq('id', tournamentId)
+      return 0
+    }
+
+    let totalViewers = 0
+
+    for (const url of uniqueUrls) {
+      const twitchUser = url.match(/(?:twitch\.tv\/)([\w\-]+)/)?.[1]
+      const kickUser = url.match(/(?:kick\.com\/)([\w\-]+)/)?.[1]
+
+      let viewers = 0
+
+      if (twitchUser) {
+        try {
+          const response = await fetch('https://gql.twitch.tv/gql', {
+            method: 'POST',
+            headers: {
+              'Client-Id': 'kimne78kx3ncx6brgo9wj607yyq771',
+              'Content-Type': 'text/plain',
+            },
+            body: JSON.stringify([
+              {
+                operationName: 'StreamRefetchHeartbeat',
+                variables: {
+                  channelName: twitchUser.toLowerCase(),
+                },
+                extensions: {
+                  persistedQuery: {
+                    version: 1,
+                    sha256Hash: '05e6e59aa28aa370e44b942fe2931a72d1746200236a997cfd9006900f684a86',
+                  },
+                },
+              },
+            ]),
+          })
+          const data = await response.json()
+          viewers = data[0]?.data?.user?.stream?.viewersCount || 0
+        } catch (err) {
+          console.error(`Error fetching twitch viewers for ${twitchUser}:`, err)
+        }
+      } else if (kickUser) {
+        try {
+          const response = await fetch(`https://kick.com/api/v1/channels/${kickUser.toLowerCase()}`, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            }
+          })
+          const data = await response.json()
+          viewers = data?.livestream?.viewer_count || 0
+        } catch (err) {
+          console.error(`Error fetching kick viewers for ${kickUser}:`, err)
+        }
+      }
+
+      totalViewers += viewers
+    }
+
+    // Update the tournaments table with total live viewers count
+    await supabase
+      .from('tournaments')
+      .update({ total_live_viewers: totalViewers })
+      .eq('id', tournamentId)
+
+    return totalViewers
+  } catch (err) {
+    console.error('Error syncing tournament viewers:', err)
+    return 0
+  }
+}
+

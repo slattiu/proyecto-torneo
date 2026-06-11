@@ -196,6 +196,7 @@ export default async function PublicLeaderboardPage({
         description={tournament.description}
         format={tournament.format}
         status={tournament.status}
+        totalLiveViewers={tournament.total_live_viewers || 0}
         killRateEnabled={tournament.kill_rate_enabled}
         potTopEnabled={tournament.pot_top_enabled}
         vipEnabled={tournament.vip_enabled}

@@ -52,6 +52,7 @@ export function LeaderboardClient({
   scoringRule?: ScoringRule
   participants: Participant[]
   championImageUrl?: string
+  totalLiveViewers?: number
 }) {
   const [isMounted, setIsMounted] = useState(false)
   const [host, setHost] = useState('localhost')
@@ -59,6 +60,7 @@ export function LeaderboardClient({
   const [currentTeams, setCurrentTeams] = useState(teams || [])
   const [currentSubmissions, setCurrentSubmissions] = useState(submissions || [])
   const [currentMatches, setCurrentMatches] = useState(matches || [])
+  const [currentLiveViewers, setCurrentLiveViewers] = useState(totalLiveViewers || 0)
   const [activeTab, setActiveTab] = useState<'ranking' | 'participants' | 'matches' | 'rules' | 'statistics'>('ranking')
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null)
   const [watchingStream, setWatchingStream] = useState<string | null>(null)
@@ -419,6 +421,9 @@ export function LeaderboardClient({
           if (payload.new.champion_image_url !== undefined) {
              setCurrentChampionImg(payload.new.champion_image_url)
           }
+          if (payload.new.total_live_viewers !== undefined) {
+             setCurrentLiveViewers(payload.new.total_live_viewers || 0)
+          }
         }
       )
       .subscribe()
@@ -461,9 +466,9 @@ export function LeaderboardClient({
     const twitchU = url.match(/(?:twitch\.tv\/)([\w\-]+)/)?.[1]
     const kickU = url.match(/(?:kick\.com\/)([\w\-]+)/)?.[1]
 
-    if (ytId) return <iframe src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0`} className="w-full h-full border-0" allow="autoplay; encrypted-media" allowFullScreen />
-    if (twitchU) return <iframe src={`https://player.twitch.tv/?channel=${twitchU}&parent=${host}&autoplay=true`} className="w-full h-full border-0" allowFullScreen />
-    if (kickU) return <iframe src={`https://player.kick.com/${kickU}?autoplay=true`} className="w-full h-full border-0" />
+    if (ytId) return <iframe src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0`} className="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+    if (twitchU) return <iframe src={`https://player.twitch.tv/?channel=${twitchU}&parent=${host}&autoplay=true`} className="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+    if (kickU) return <iframe src={`https://player.kick.com/${kickU}?autoplay=true`} className="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
     
     return <div className="flex items-center justify-center h-full text-white/40">URL de stream no soportada</div>
   }
@@ -593,6 +598,12 @@ export function LeaderboardClient({
           )}
 
           {description && <p className="text-white/60 text-lg max-w-2xl mx-auto">{description}</p>}
+          {currentLiveViewers > 0 && (
+            <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-xs font-black uppercase tracking-widest animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+              <span>{currentLiveViewers.toLocaleString()} Espectadores en Vivo</span>
+            </div>
+          )}
           {currentStatus === 'draft' && <span className="inline-block mt-4 text-xs font-bold bg-white/10 px-3 py-1 rounded text-white/50 uppercase">Pre-torneo</span>}
           {currentStatus === 'active' && <span className="inline-block mt-4 text-xs font-bold bg-red-500/20 border border-red-500/30 px-3 py-1 rounded text-red-400 uppercase animate-pulse">● En Vivo</span>}
           {currentStatus === 'finished' && (
