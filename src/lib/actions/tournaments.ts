@@ -722,11 +722,23 @@ export async function deleteTournament(
     .single()
 
   if (fetchErr || !tournament) return { error: 'Torneo no encontrado' }
-  if (tournament.creator_id !== user.id) return { error: 'Sin permisos para eliminar este torneo' }
 
-  // Delete tournament — FK cascade in Supabase will remove:
-  // matches, submissions, team_standings, scoring_rules, teams, leaderboard_themes
-  const { error: deleteErr } = await supabase
+  // Check if user is an ADMIN to allow deletion of other users' tournaments
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const isUserAdmin = profile?.role === 'ADMIN'
+
+  if (tournament.creator_id !== user.id && !isUserAdmin) {
+    return { error: 'Sin permisos para eliminar este torneo' }
+  }
+
+  // Delete tournament — using admin client to bypass creator-only RLS constraints
+  const adminSupabase = await createAdminClient()
+  const { error: deleteErr } = await adminSupabase
     .from('tournaments')
     .delete()
     .eq('id', id)
