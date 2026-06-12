@@ -14,6 +14,8 @@ import { syncStandings } from '@/lib/actions/submissions'
 import { AdPlacement } from '@/components/federation/AdPlacement'
 import type { AdBanner } from '@/lib/actions/federation'
 import { trackEvent } from '@/lib/analytics'
+import { registerTournament } from '@/lib/actions/registration'
+import { toast } from 'sonner'
 
 const orbitron = Orbitron({ subsets: ['latin'] })
 
@@ -38,6 +40,8 @@ export function LeaderboardClient({
   championImageUrl,
   totalLiveViewers,
   adBanners,
+  slug,
+  mode,
 }: {
   tournamentId: string
   tournamentName: string
@@ -59,7 +63,62 @@ export function LeaderboardClient({
   championImageUrl?: string
   totalLiveViewers?: number
   adBanners?: AdBanner[]
+  slug: string
+  mode: string
 }) {
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [isUserRegistered, setIsUserRegistered] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [regTeamName, setRegTeamName] = useState('')
+  const [regStreamUrl, setRegStreamUrl] = useState('')
+  const [regParticipants, setRegParticipants] = useState<string[]>([])
+  const [regLoading, setRegLoading] = useState(false)
+
+  const handleOpenRegistration = () => {
+    const size = { individual: 1, duos: 2, trios: 3, cuartetos: 4 }[mode] || 1
+    const initialParticipants = Array(size).fill('')
+    if (currentUser) {
+      initialParticipants[0] = currentUser.email.split('@')[0]
+    }
+    setRegParticipants(initialParticipants)
+    setRegTeamName('')
+    setRegStreamUrl('')
+    setIsRegistering(true)
+  }
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setRegLoading(true)
+    try {
+      // Validate all names are filled
+      const emptyNameIndex = regParticipants.findIndex(name => name.trim() === '')
+      if (emptyNameIndex !== -1) {
+        toast.error(`Por favor, completa el nombre del Integrante ${emptyNameIndex + 1}`)
+        setRegLoading(false)
+        return
+      }
+
+      const members = regParticipants.map(name => ({ displayName: name }))
+      const res = await registerTournament(tournamentId, {
+        teamName: mode === 'individual' ? regParticipants[0] : regTeamName,
+        streamUrl: regStreamUrl || undefined,
+        participants: members
+      })
+
+      if (res && 'error' in res) {
+        toast.error(res.error)
+      } else {
+        toast.success('¡Inscripción completada con éxito!')
+        setIsUserRegistered(true)
+        setIsRegistering(false)
+        window.location.reload()
+      }
+    } catch (err: any) {
+      toast.error('Ocurrió un error al enviar la inscripción.')
+    } finally {
+      setRegLoading(false)
+    }
+  }
   const [isMounted, setIsMounted] = useState(false)
   const [host, setHost] = useState('localhost')
   const [standings, setStandings] = useState(initialStandings)
@@ -92,6 +151,26 @@ export function LeaderboardClient({
       metadata: { tournamentName }
     })
   }, [tournamentId, tournamentName])
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setCurrentUser(user)
+        // Check if user is registered in this tournament
+        const { data: registration } = await supabase
+          .from('participants')
+          .select('id')
+          .eq('tournament_id', tournamentId)
+          .eq('user_id', user.id)
+          .limit(1)
+        if (registration && registration.length > 0) {
+          setIsUserRegistered(true)
+        }
+      }
+    }
+    fetchUser()
+  }, [supabase, tournamentId])
 
   const primaryColor = currentTheme?.primary_color || currentTheme?.primaryColor || '#00F5FF'
   const backgroundValue = currentTheme?.background_value
@@ -803,6 +882,12 @@ export function LeaderboardClient({
                 ● En Vivo
               </span>
             )}
+            {currentStatus === 'pending' && (
+              <span className="text-xs font-bold bg-green-500/10 border border-green-500/20 px-3.5 py-1.5 rounded-full text-green-400 uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                Inscripciones Abiertas
+              </span>
+            )}
             {currentStatus === 'finished' && (
               <span className="text-xs font-bold bg-gold/10 border border-gold/20 px-3.5 py-1.5 rounded-full text-gold uppercase tracking-widest flex items-center gap-1.5">
                 <span>🏆</span> Torneo Finalizado
@@ -841,6 +926,42 @@ export function LeaderboardClient({
                 Salón de la Fama
               </span>
             </button>
+          )}
+
+          {/* Registration Section */}
+          {(currentStatus === 'pending' || currentStatus === 'active') && (
+            <div className="mt-8 px-6 py-4 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md max-w-xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 w-full text-left">
+              <div>
+                <h3 className="font-orbitron font-bold text-sm text-white uppercase tracking-wider">Inscripción al Torneo</h3>
+                <p className="text-white/40 text-xs mt-1">
+                  {isUserRegistered 
+                    ? '¡Ya estás inscrito en este torneo! Revisa tu equipo en la pestaña de Participantes.'
+                    : `Regístrate para competir en la modalidad de ${format.replace(/_/g, ' ').toUpperCase()}.`
+                  }
+                </p>
+              </div>
+              <div className="shrink-0 w-full sm:w-auto text-right">
+                {isUserRegistered ? (
+                  <span className="inline-block text-xs font-bold bg-green-500/20 text-green-400 px-4 py-2.5 rounded-xl border border-green-500/30 uppercase tracking-wider">
+                    ✓ Inscrito
+                  </span>
+                ) : currentUser ? (
+                  <button
+                    onClick={handleOpenRegistration}
+                    className="w-full sm:w-auto px-5 py-2.5 bg-neon-cyan hover:bg-neon-cyan/90 active:scale-95 text-black font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-[0_0_20px_rgba(0,245,255,0.2)] hover:shadow-[0_0_35px_rgba(0,245,255,0.35)]"
+                  >
+                    Inscribirse Ahora
+                  </button>
+                ) : (
+                  <Link
+                    href={`/login?redirectTo=/t/${slug}`}
+                    className="inline-block w-full sm:w-auto text-center px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-white/10"
+                  >
+                    Inicia Sesión
+                  </Link>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
@@ -1344,6 +1465,116 @@ export function LeaderboardClient({
                 <div className="overflow-x-auto p-4 sm:p-6 max-h-[75vh] overflow-y-auto">
                   {renderStandingsTable()}
                 </div>
+              </motion.div>
+            </motion.div>
+          )}
+          {isRegistering && (
+            <motion.div
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xl overflow-y-auto"
+              onClick={() => setIsRegistering(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="bg-dark-card/95 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] w-full max-w-lg flex flex-col my-8"
+                onClick={e => e.stopPropagation()}
+              >
+                <div 
+                  className="flex justify-between items-center px-6 sm:px-8 py-5 border-b border-white/5 bg-white/[0.03]"
+                  style={{ borderLeft: `4px solid ${primaryColor}` }}
+                >
+                  <div>
+                    <h2 className="font-orbitron font-black text-lg sm:text-xl text-white uppercase tracking-wider">
+                      Formulario de Inscripción
+                    </h2>
+                    <p className="text-white/40 text-xs mt-0.5 uppercase tracking-widest font-semibold">
+                      Modalidad: {mode.toUpperCase()}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => setIsRegistering(false)}
+                    className="p-2 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white rounded-lg transition-all border border-white/10"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <form onSubmit={handleRegisterSubmit} className="p-6 space-y-4">
+                  {mode !== 'individual' && (
+                    <div>
+                      <label className="block text-xs text-white/60 uppercase tracking-widest font-bold mb-1.5 ml-1">
+                        Nombre del Equipo
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={regTeamName}
+                        onChange={e => setRegTeamName(e.target.value)}
+                        placeholder="Ej. Los Reyes del Barrio"
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 transition-all"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs text-white/60 uppercase tracking-widest font-bold mb-1.5 ml-1">
+                      Link de Stream (Opcional)
+                    </label>
+                    <input
+                      type="url"
+                      value={regStreamUrl}
+                      onChange={e => setRegStreamUrl(e.target.value)}
+                      placeholder="https://twitch.tv/tu_canal"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="block text-xs text-white/60 uppercase tracking-widest font-bold mb-1 ml-1">
+                      Integrantes ({regParticipants.length})
+                    </label>
+                    {regParticipants.map((name, idx) => (
+                      <div key={idx}>
+                        <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider block mb-1.5 ml-1">
+                          {idx === 0 ? 'Integrante 1 (Capitán / Tú)' : `Integrante ${idx + 1}`}
+                        </span>
+                        <input
+                          required
+                          type="text"
+                          value={name}
+                          onChange={e => {
+                            const newParticipants = [...regParticipants]
+                            newParticipants[idx] = e.target.value
+                            setRegParticipants(newParticipants)
+                          }}
+                          placeholder={idx === 0 ? "Tu display name / GamerTag" : `Display Name Integrante ${idx + 1}`}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 transition-all"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3 pt-4 border-t border-white/5">
+                    <button
+                      type="submit"
+                      disabled={regLoading}
+                      className="flex-1 py-3 bg-neon-cyan hover:bg-neon-cyan/95 active:scale-95 text-black font-bold text-sm uppercase tracking-wider rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(0,245,255,0.15)]"
+                    >
+                      {regLoading ? 'Procesando Inscripción...' : 'Enviar Inscripción'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsRegistering(false)}
+                      className="px-5 py-3 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white text-sm font-bold uppercase tracking-wider rounded-xl transition-all"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
               </motion.div>
             </motion.div>
           )}

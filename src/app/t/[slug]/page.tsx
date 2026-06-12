@@ -201,6 +201,7 @@ export default async function PublicLeaderboardPage({
         description={tournament.description}
         format={tournament.format}
         status={tournament.status}
+        mode={tournament.mode}
         totalLiveViewers={tournament.total_live_viewers || 0}
         killRateEnabled={tournament.kill_rate_enabled}
         potTopEnabled={tournament.pot_top_enabled}
@@ -215,6 +216,7 @@ export default async function PublicLeaderboardPage({
         participants={allParticipants}
         championImageUrl={tournament.champion_image_url}
         adBanners={adBanners}
+        slug={normalizedSlug}
       />
     </main>
   )
