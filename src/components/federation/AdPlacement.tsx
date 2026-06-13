@@ -1,3 +1,5 @@
+'use client'
+
 import type { AdBanner } from '@/lib/actions/federation'
 import Link from 'next/link'
 import { trackEvent } from '@/lib/analytics'
