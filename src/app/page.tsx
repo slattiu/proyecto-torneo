@@ -117,18 +117,26 @@ export default async function Home() {
             </div>
           )}
           
-          <h1 className={`${orbitron.className} text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-8`}>
-            {settings.hero_title.split(' ').slice(0, -2).join(' ')}<br/>
-            <span 
-              className="text-transparent bg-clip-text"
-              style={{ backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})` }}
-            >
-              {settings.hero_title.split(' ').slice(-2).join(' ')}
-            </span>
-          </h1>
+           {(() => {
+             const title = settings?.hero_title || 'EL PORTAL DE LOS E-SPORTS DOMINICANOS';
+             const words = title.split(' ');
+             const mainPart = words.slice(0, -2).join(' ');
+             const gradientPart = words.slice(-2).join(' ');
+             return (
+               <h1 className={`${orbitron.className} text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-8`}>
+                 {mainPart}<br/>
+                 <span 
+                   className="text-transparent bg-clip-text"
+                   style={{ backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})` }}
+                 >
+                   {gradientPart}
+                 </span>
+               </h1>
+             );
+           })()}
           
           <p className="max-w-2xl mx-auto text-white/40 text-base md:text-lg mb-10 leading-relaxed">
-            {settings.hero_subtitle}
+            {settings?.hero_subtitle || 'La herramienta definitiva de clasificación nacional. Consulta estadísticas de atletas, descubre torneos avalados por la Federación y visualiza los rankings de la República Dominicana.'}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
