@@ -26,6 +26,7 @@ export default async function AdminLayout({
             <Link href="/admin/subscriptions" className="hover:text-neon-cyan transition-colors">Suscripciones</Link>
             <Link href="/admin/tournaments" className="hover:text-neon-cyan transition-colors">Torneos</Link>
             <Link href="/admin/analytics" className="hover:text-neon-cyan transition-colors">Analíticas</Link>
+            <Link href="/admin/ads" className="hover:text-neon-cyan transition-colors">Publicidad</Link>
             <Link href="/admin/settings" className="hover:text-neon-cyan transition-colors">Configuración</Link>
           </div>
         </div>
