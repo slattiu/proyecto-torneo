@@ -53,11 +53,12 @@ export default async function TorneosPublicosPage() {
   const { data: { user } } = await supabase.auth.getUser()
   const profile = user ? await getProfile() : null
 
-  // Fetch all public tournaments (is_private = false or null)
+  // Fetch all public tournaments (is_private = false or null) and not finished
   const { data: tournaments, error } = await adminSupabase
     .from('tournaments')
     .select('*, teams(id)')
     .or('is_private.eq.false,is_private.is.null')
+    .neq('status', 'finished')
     .order('created_at', { ascending: false })
 
   return (
