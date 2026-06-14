@@ -477,6 +477,9 @@ export function LeaderboardClient({
                            participants={participantsWithCalculatedKills}
                            primaryColor={primaryColor}
                            discipline={discipline}
+                           totalPoints={s.totalPoints}
+                           rank={s.rank}
+                           tournamentMode={mode}
                          />
                       </td>
                     </motion.tr>
@@ -1591,6 +1594,9 @@ export function LeaderboardClient({
                       participants={participantsWithCalculatedKills}
                       primaryColor={primaryColor}
                       discipline={discipline}
+                      totalPoints={s.totalPoints}
+                      rank={s.rank}
+                      tournamentMode={mode}
                     />
                   ))}
               </motion.div>

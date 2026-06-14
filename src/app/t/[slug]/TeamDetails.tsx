@@ -38,6 +38,9 @@ interface TeamDetailsProps {
   participants: Participant[]
   primaryColor: string
   discipline?: string
+  totalPoints?: number
+  rank?: number
+  tournamentMode?: string
 }
 
 export function TeamDetails({
@@ -49,6 +52,9 @@ export function TeamDetails({
   participants,
   primaryColor,
   discipline = 'warzone',
+  totalPoints = 0,
+  rank = 1,
+  tournamentMode = 'individual',
 }: TeamDetailsProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [isMounted, setIsMounted] = useState(false)
@@ -68,6 +74,12 @@ export function TeamDetails({
     () => participants.filter((p) => p.teamId === teamId),
     [participants, teamId]
   )
+
+  useEffect(() => {
+    if (isMounted && tournamentMode === 'individual' && teamParticipants.length > 0) {
+      setSelectedPlayerId(teamParticipants[0].id)
+    }
+  }, [isMounted, tournamentMode, teamParticipants])
 
   const selectedPlayer = useMemo(
     () => teamParticipants.find(p => p.id === selectedPlayerId),
@@ -228,18 +240,22 @@ export function TeamDetails({
 
           {/* Top bar */}
           <div className="relative z-10 flex items-center justify-between px-5 pt-4 pb-0">
-            <button
-              onClick={() => setSelectedPlayerId(null)}
-              className="flex items-center gap-2 transition-colors text-[9px] font-black uppercase tracking-[0.25em]"
-              style={{ color: `rgba(${rgbColor}, 0.6)` }}
-              onMouseEnter={e => (e.currentTarget.style.color = playerColor)}
-              onMouseLeave={e => (e.currentTarget.style.color = `rgba(${rgbColor}, 0.6)`)}
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-              </svg>
-              Volver
-            </button>
+            {tournamentMode !== 'individual' ? (
+              <button
+                onClick={() => setSelectedPlayerId(null)}
+                className="flex items-center gap-2 transition-colors text-[9px] font-black uppercase tracking-[0.25em]"
+                style={{ color: `rgba(${rgbColor}, 0.6)` }}
+                onMouseEnter={e => (e.currentTarget.style.color = playerColor)}
+                onMouseLeave={e => (e.currentTarget.style.color = `rgba(${rgbColor}, 0.6)`)}
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+                Volver
+              </button>
+            ) : (
+              <div />
+            )}
             <div className="flex items-center gap-3">
               <motion.div
                 animate={{ opacity: [1, 0.3, 1] }}
@@ -338,7 +354,7 @@ export function TeamDetails({
                 transition={{ delay: 0.1 }}
                 className="flex items-center gap-2 mb-2"
               >
-                {selectedPlayer.isCaptain && (
+                {selectedPlayer.isCaptain && tournamentMode !== 'individual' && (
                   <span style={{
                     background: `rgba(${rgbColor}, 0.15)`, border: `1px solid rgba(${rgbColor}, 0.5)`,
                     color: playerColor, fontSize: '0.45rem',
@@ -387,7 +403,10 @@ export function TeamDetails({
                 transition={{ delay: 0.32 }}
                 className="flex gap-5 mb-4"
               >
-                {(['clash_royale', 'street_fighter_6', 'super_smash_bros_ultimate', 'league_of_legends', 'valorant'].includes(discipline) ? [
+                {(discipline === 'clash_royale' ? [
+                  { label: 'COPAS', value: totalPoints, dec: 0, color: playerColor },
+                  { label: 'POSICIÓN', value: rank, prefix: '#', dec: 0, color: playerColor },
+                ] : ['street_fighter_6', 'super_smash_bros_ultimate', 'league_of_legends', 'valorant'].includes(discipline) ? [
                   { label: 'PUNTOS', value: chartData.length > 0 ? chartData[chartData.length - 1].points : 0, dec: 0, color: playerColor },
                   { label: 'PARTIDAS', value: teamSubmissions.length, dec: 0, color: playerColor },
                 ] : [
@@ -397,7 +416,7 @@ export function TeamDetails({
                   <div key={s.label}>
                     <p style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'Orbitron, sans-serif', letterSpacing: '0.2em', marginBottom: '2px' }}>{s.label}</p>
                     <p style={{ fontSize: '2rem', fontFamily: 'Orbitron, sans-serif', fontWeight: 900, color: s.color, lineHeight: 1, textShadow: `0 0 20px ${s.color}66` }}>
-                      <AnimatedNumber value={s.value} decimals={s.dec} />
+                      {s.prefix || ''}<AnimatedNumber value={s.value} decimals={s.dec} />
                     </p>
                   </div>
                 ))}
