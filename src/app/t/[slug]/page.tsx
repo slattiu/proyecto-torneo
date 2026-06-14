@@ -20,19 +20,26 @@ export default async function PublicLeaderboardPage({
   const adminSupabase = await createAdminClient()
   const supabase = adminSupabase // Replace public client with admin for this page
 
-  // Fetch the tournament
-  const { data: tournament, error: tErr } = await supabase
+  // Fetch the tournament ID
+  const { data: tourneyInit, error: tErr } = await supabase
     .from('tournaments')
-    .select('*, leaderboard_themes(*)')
+    .select('id')
     .eq('slug', normalizedSlug)
     .single()
 
-  if (tErr || !tournament) notFound()
+  if (tErr || !tourneyInit) notFound()
 
   // AUTO-SYNC: Recalculate standings on every page load to ensure data is always fresh
-  if (tournament?.id) {
-    await recalculateStandings(adminSupabase, tournament.id)
-  }
+  await recalculateStandings(adminSupabase, tourneyInit.id)
+
+  // Fetch the full tournament details (reflecting any automatic status updates from the sync)
+  const { data: tournament } = await supabase
+    .from('tournaments')
+    .select('*, leaderboard_themes(*)')
+    .eq('id', tourneyInit.id)
+    .single()
+
+  if (!tournament) notFound()
 
   // Fetch ALL teams with their participants (for the Participants tab)
   const { data: allTeams } = await supabase
