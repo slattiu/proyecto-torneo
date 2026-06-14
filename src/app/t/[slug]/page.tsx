@@ -209,6 +209,7 @@ export default async function PublicLeaderboardPage({
         status={tournament.status}
         mode={tournament.mode}
         clashRoyaleTag={tournament.clash_royale_tag}
+        discipline={tournament.discipline}
         totalLiveViewers={tournament.total_live_viewers || 0}
         killRateEnabled={tournament.kill_rate_enabled}
         potTopEnabled={tournament.pot_top_enabled}

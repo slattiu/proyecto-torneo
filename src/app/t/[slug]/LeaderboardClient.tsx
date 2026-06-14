@@ -53,6 +53,7 @@ export function LeaderboardClient({
   prize3rd = 0,
   prizeMvp = 0,
   clashRoyaleTag,
+  discipline = 'warzone',
 }: {
   tournamentId: string
   tournamentName: string
@@ -87,12 +88,14 @@ export function LeaderboardClient({
   prize3rd?: number
   prizeMvp?: number
   clashRoyaleTag?: string | null
+  discipline?: string
 }) {
   // Stable supabase client — created once, not on every render.
   // If this were inside the component body without useMemo, every render would produce
   // a new object reference, causing refreshStandingsFromDB (useCallback) to be
   // recreated each render, which would re-trigger the useEffect on every render.
   const supabase = useMemo(() => createClient(), [])
+  const isShooter = discipline !== 'clash_royale' && discipline !== 'street_fighter_6' && discipline !== 'super_smash_bros_ultimate'
 
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [isUserRegistered, setIsUserRegistered] = useState(false)
@@ -320,9 +323,9 @@ export function LeaderboardClient({
             <th className="px-6 py-4 w-20 text-center">Rank</th>
             <th className="px-6 py-4">Equipo</th>
             <th className="px-6 py-4 text-center">PTS</th>
-            <th className="px-6 py-4 text-center">Kills</th>
+            {isShooter && <th className="px-6 py-4 text-center">Kills</th>}
             {potTopEnabled && <th className="hidden md:table-cell px-6 py-4 text-center">Top 1</th>}
-            {killRateEnabled && <th className="hidden md:table-cell px-6 py-4 text-center">Kill Rate</th>}
+            {isShooter && killRateEnabled && <th className="hidden md:table-cell px-6 py-4 text-center">Kill Rate</th>}
           </tr>
         </thead>
         <tbody>
@@ -424,14 +427,16 @@ export function LeaderboardClient({
                   <td className="px-3 sm:px-6 py-4 sm:py-6 text-center font-orbitron font-black text-2xl sm:text-4xl text-neon-cyan">
                     <NumberTicker value={s.totalPoints} />
                   </td>
-                  <td className="px-3 sm:px-6 py-4 sm:py-6 text-center">
-                     <div className="flex flex-col items-center">
-                        <span className="text-white font-black text-lg sm:text-xl">
-                          <NumberTicker value={s.totalKills} />
-                        </span>
-                        <span className="text-[8px] text-white/40 uppercase font-black tracking-widest mt-1">TOTAL KILLS</span>
-                     </div>
-                  </td>
+                  {isShooter && (
+                    <td className="px-3 sm:px-6 py-4 sm:py-6 text-center">
+                       <div className="flex flex-col items-center">
+                          <span className="text-white font-black text-lg sm:text-xl">
+                            <NumberTicker value={s.totalKills} />
+                          </span>
+                          <span className="text-[8px] text-white/40 uppercase font-black tracking-widest mt-1">TOTAL KILLS</span>
+                       </div>
+                    </td>
+                  )}
                   {potTopEnabled && (
                     <td className="hidden md:table-cell px-6 py-4 text-center">
                        <div className="flex flex-col items-center">
@@ -440,7 +445,7 @@ export function LeaderboardClient({
                        </div>
                     </td>
                   )}
-                  {killRateEnabled && (
+                  {isShooter && killRateEnabled && (
                     <td className="hidden md:table-cell px-6 py-4 text-center">
                        <div className="flex flex-col items-center">
                           <span className="text-white/60 font-mono text-xs">
@@ -523,7 +528,7 @@ export function LeaderboardClient({
                   <th className="px-4 py-3 w-16 text-center">Rank</th>
                   <th className="px-4 py-3">Equipo</th>
                   <th className="px-4 py-3 text-center">PTS</th>
-                  <th className="px-4 py-3 text-center">Kills</th>
+                  {isShooter && <th className="px-4 py-3 text-center">Kills</th>}
                 </tr>
               </thead>
               <tbody>
@@ -553,9 +558,11 @@ export function LeaderboardClient({
                     <td className="px-4 py-3.5 text-center font-orbitron font-black text-sm text-neon-cyan">
                       {s.totalPoints}
                     </td>
-                    <td className="px-4 py-3.5 text-center font-orbitron font-bold text-xs text-white/80">
-                      {s.totalKills}
-                    </td>
+                    {isShooter && (
+                      <td className="px-4 py-3.5 text-center font-orbitron font-bold text-xs text-white/80">
+                        {s.totalKills}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
