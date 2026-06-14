@@ -52,6 +52,8 @@ export default async function ParticipantsPage({
         tournamentId={id}
         tournamentSlug={tournament.slug}
         tournamentMode={tournament.mode} 
+        tournamentDiscipline={tournament.discipline}
+        tournamentStatus={tournament.status}
         initialTeams={teams} 
         initialParticipants={participants} 
       />

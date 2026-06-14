@@ -17,7 +17,7 @@ export default async function TeamPortalPage({
   // Fetch the tournament
   const { data: tournament, error: tErr } = await supabase
     .from('tournaments')
-    .select('id, name, status, kill_rate_enabled, pot_top_enabled')
+    .select('id, name, status, kill_rate_enabled, pot_top_enabled, discipline, clash_royale_tag')
     .eq('slug', normalizedSlug)
     .single()
 
@@ -49,6 +49,7 @@ export default async function TeamPortalPage({
 
   // Active check if tournament is running
   const isTournamentActive = tournament.status === 'active'
+  const isAutoSynced = tournament.discipline === 'clash_royale' || !!tournament.clash_royale_tag
 
   return (
     <main className="min-h-screen bg-dark-bg text-white font-inter flex flex-col items-center justify-center p-4">
@@ -63,7 +64,7 @@ export default async function TeamPortalPage({
           
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-white/5">
             {team.avatar_url ? (
-              <img src={team.avatar_url} alt={team.name} className="w-16 h-16 rounded-xl object-cover border border-white/10" />
+               <img src={team.avatar_url} alt={team.name} className="w-16 h-16 rounded-xl object-cover border border-white/10" />
             ) : (
               <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl">
                 🎮
@@ -71,11 +72,22 @@ export default async function TeamPortalPage({
             )}
             <div>
               <h2 className="text-2xl font-orbitron font-bold text-white">{team.name}</h2>
-              <p className="text-sm text-white/50">Subida de Evidencia</p>
+              <p className="text-sm text-white/50">{isAutoSynced ? 'Sincronización Automática' : 'Subida de Evidencia'}</p>
             </div>
           </div>
 
-          {!isTournamentActive ? (
+          {isAutoSynced ? (
+            <div className="text-center py-8 px-4 space-y-4">
+              <span className="text-5xl block animate-pulse">⚡</span>
+              <h3 className="text-lg text-white font-orbitron font-bold uppercase tracking-wider">Marcador Sincronizado por API</h3>
+              <p className="text-sm text-white/60 leading-relaxed">
+                Este torneo se actualiza automáticamente a través de la API de Clash Royale.
+              </p>
+              <div className="p-3 bg-neon-cyan/5 border border-neon-cyan/25 rounded-xl text-xs text-neon-cyan/85 font-medium leading-relaxed">
+                No necesitas subir capturas de pantalla ni reportar resultados manualmente. Juega tus partidas en el torneo dentro del juego y los resultados se reflejarán en el marcador general.
+              </div>
+            </div>
+          ) : !isTournamentActive ? (
             <div className="text-center py-8">
               <span className="text-4xl mb-4 block">⏳</span>
               <h3 className="text-lg text-white font-medium mb-2">El torneo no está activo</h3>

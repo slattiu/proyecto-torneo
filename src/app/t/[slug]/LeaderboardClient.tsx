@@ -1330,24 +1330,28 @@ export function LeaderboardClient({
         >
           Participantes
         </button>
-        <button
-          onClick={() => setActiveTab('matches')}
-          className={`shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-orbitron text-xs sm:text-sm transition-all shadow-lg ${
-            activeTab === 'matches' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/80'
-          }`}
-          style={{ borderColor: activeTab === 'matches' ? primaryColor : 'transparent', borderWidth: 1 }}
-        >
-          Partidas
-        </button>
-        <button
-          onClick={() => setActiveTab('statistics')}
-          className={`shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-orbitron text-xs sm:text-sm transition-all shadow-lg ${
-            activeTab === 'statistics' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/80'
-          }`}
-          style={{ borderColor: activeTab === 'statistics' ? primaryColor : 'transparent', borderWidth: 1 }}
-        >
-          Estadísticas
-        </button>
+        {isShooter && (
+          <button
+            onClick={() => setActiveTab('matches')}
+            className={`shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-orbitron text-xs sm:text-sm transition-all shadow-lg ${
+              activeTab === 'matches' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/80'
+            }`}
+            style={{ borderColor: activeTab === 'matches' ? primaryColor : 'transparent', borderWidth: 1 }}
+          >
+            Partidas
+          </button>
+        )}
+        {isShooter && (
+          <button
+            onClick={() => setActiveTab('statistics')}
+            className={`shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-orbitron text-xs sm:text-sm transition-all shadow-lg ${
+              activeTab === 'statistics' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/80'
+            }`}
+            style={{ borderColor: activeTab === 'statistics' ? primaryColor : 'transparent', borderWidth: 1 }}
+          >
+            Estadísticas
+          </button>
+        )}
         <button
           onClick={() => setActiveTab('rules')}
           className={`shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-orbitron text-xs sm:text-sm transition-all shadow-lg ${
@@ -1917,7 +1921,7 @@ export function LeaderboardClient({
                     {regParticipants.map((name, idx) => (
                       <div key={idx}>
                         <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider block mb-1.5 ml-1">
-                          {idx === 0 ? 'Integrante 1 (Capitán / Tú)' : `Integrante ${idx + 1}`}
+                          {mode === 'individual' ? 'Tu GamerTag / Nombre' : idx === 0 ? 'Integrante 1 (Capitán / Tú)' : `Integrante ${idx + 1}`}
                         </span>
                         <input
                           required

@@ -9,12 +9,16 @@ export function ParticipantsManager({
   tournamentId,
   tournamentSlug,
   tournamentMode,
+  tournamentDiscipline = 'warzone',
+  tournamentStatus = 'draft',
   initialTeams,
   initialParticipants,
 }: {
   tournamentId: string
   tournamentSlug: string
   tournamentMode: TournamentMode
+  tournamentDiscipline?: string
+  tournamentStatus?: string
   initialTeams: Team[]
   initialParticipants: Participant[]
 }) {
@@ -22,6 +26,9 @@ export function ParticipantsManager({
   const [participants, setParticipants] = useState(initialParticipants)
   const [isAdding, setIsAdding] = useState(false)
   const [collapsedTeams, setCollapsedTeams] = useState<Set<string>>(new Set())
+  
+  const isLocked = tournamentStatus === 'active' || tournamentStatus === 'finished'
+  const isShooter = !['clash_royale', 'street_fighter_6', 'super_smash_bros_ultimate', 'league_of_legends', 'valorant'].includes(tournamentDiscipline)
   
   const toggleTeamCollapse = (teamId: string) => {
     const newCollapsed = new Set(collapsedTeams)
@@ -242,15 +249,22 @@ export function ParticipantsManager({
 
   return (
     <div className="space-y-6">
+      {isLocked && (
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 text-center text-xs text-yellow-400 font-medium uppercase tracking-wider">
+          🔒 El torneo ya ha iniciado o finalizado. El listado de participantes y equipos está cerrado.
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium text-white/80">Listado ({teams.length})</h2>
-        <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 
-            text-sm text-white rounded-lg transition-colors border border-white/10"
-        >
-          {isAdding ? 'Cancelar' : (isIndividual ? '+ Agregar Jugador' : '+ Agregar Equipo')}
-        </button>
+        {!isLocked && (
+          <button
+            onClick={() => setIsAdding(!isAdding)}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 
+              text-sm text-white rounded-lg transition-colors border border-white/10"
+          >
+            {isAdding ? 'Cancelar' : (isIndividual ? '+ Agregar Jugador' : '+ Agregar Equipo')}
+          </button>
+        )}
       </div>
 
       {isAdding && (
@@ -369,14 +383,16 @@ export function ParticipantsManager({
                       </svg>
                       Copiar Portal
                     </button>
-                    <button
-                      onClick={() => handleRemoveTeam(team.id)}
-                      className="p-2 text-white/20 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                    {!isLocked && (
+                      <button
+                        onClick={() => handleRemoveTeam(team.id)}
+                        className="p-2 text-white/20 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -407,7 +423,7 @@ export function ParticipantsManager({
                             </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="text-white font-bold text-sm truncate">{p.displayName}</h4>
-                              {p.isCaptain ? (
+                              {isIndividual ? null : p.isCaptain ? (
                                 <span className="text-[8px] font-black text-neon-cyan uppercase tracking-widest block">Capitán</span>
                               ) : (
                                 <span className="text-[8px] font-bold text-white/30 uppercase tracking-widest block">Jugador</span>
@@ -469,20 +485,22 @@ export function ParticipantsManager({
                                   </svg>
                                 </a>
                               )}
-                              <button
-                                onClick={() => handleRemoveParticipant(p.id)}
-                                className="text-white/20 hover:text-red-500 transition-colors"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
+                              {!isLocked && (
+                                <button
+                                  onClick={() => handleRemoveParticipant(p.id)}
+                                  className="text-white/20 hover:text-red-500 transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
                       ))}
 
-                      {roster.length < maxPerTeam && (
+                      {!isLocked && roster.length < maxPerTeam && (
                         addingPlayerTo === team.id ? (
                           <div className="bg-white/5 border border-neon-purple/30 rounded-2xl p-4 space-y-2">
                             <input
@@ -493,31 +511,39 @@ export function ParticipantsManager({
                               placeholder="Nombre del jugador"
                               className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-white/20 outline-none focus:border-neon-purple/50"
                             />
+                            {isShooter && (
+                              <div className="grid grid-cols-2 gap-1.5">
+                                <div>
+                                  <label className="text-[8px] text-white/30 uppercase tracking-widest ml-1">K/D Promedio</label>
+                                  <input type="number" step="0.01" min="0" value={newPlayerKd} onChange={e => setNewPlayerKd(e.target.value)}
+                                    placeholder="1.50"
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
+                                </div>
+                                <div>
+                                  <label className="text-[8px] text-white/30 uppercase tracking-widest ml-1">Kills/Partida</label>
+                                  <input type="number" step="0.1" min="0" value={newPlayerAvgKills} onChange={e => setNewPlayerAvgKills(e.target.value)}
+                                    placeholder="4.5"
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
+                                </div>
+                              </div>
+                            )}
                             <div className="grid grid-cols-2 gap-1.5">
                               <div>
-                                <label className="text-[8px] text-white/30 uppercase tracking-widest ml-1">K/D Promedio</label>
-                                <input type="number" step="0.01" min="0" value={newPlayerKd} onChange={e => setNewPlayerKd(e.target.value)}
-                                  placeholder="1.50"
-                                  className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
-                              </div>
-                              <div>
-                                <label className="text-[8px] text-white/30 uppercase tracking-widest ml-1">Kills/Partida</label>
-                                <input type="number" step="0.1" min="0" value={newPlayerAvgKills} onChange={e => setNewPlayerAvgKills(e.target.value)}
-                                  placeholder="4.5"
-                                  className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
-                              </div>
-                              <div>
-                                <label className="text-[8px] text-white/30 uppercase tracking-widest ml-1">Rango Clasif.</label>
+                                <label className="text-[8px] text-white/30 uppercase tracking-widest ml-1">
+                                  {tournamentDiscipline === 'clash_royale' ? "Copas / Arena" : "Rango Clasif."}
+                                </label>
                                 <input type="text" value={newPlayerRank} onChange={e => setNewPlayerRank(e.target.value)}
-                                  placeholder="Oro / Platino..."
+                                  placeholder={tournamentDiscipline === 'clash_royale' ? "7500 copas / Arena 15" : "Oro / Platino..."}
                                   className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
                               </div>
-                              <div>
-                                <label className="text-[8px] text-white/30 uppercase tracking-widest ml-1">Pos. Prom. BR</label>
-                                <input type="number" step="1" min="1" value={newPlayerBrPlacement} onChange={e => setNewPlayerBrPlacement(e.target.value)}
-                                  placeholder="8"
-                                  className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
-                              </div>
+                              {isShooter && (
+                                <div>
+                                  <label className="text-[8px] text-white/30 uppercase tracking-widest ml-1">Pos. Prom. BR</label>
+                                  <input type="number" step="1" min="1" value={newPlayerBrPlacement} onChange={e => setNewPlayerBrPlacement(e.target.value)}
+                                    placeholder="8"
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
+                                </div>
+                              )}
                             </div>
                             <div className="flex gap-2 pt-1">
                               <button
@@ -606,30 +632,38 @@ export function ParticipantsManager({
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[9px] text-white/40 uppercase tracking-widest mb-1.5">K/D Promedio</label>
-                <input type="number" step="0.01" min="0" value={editKd} onChange={e => setEditKd(e.target.value)}
-                  placeholder="1.50"
-                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
-              </div>
-              <div>
-                <label className="block text-[9px] text-white/40 uppercase tracking-widest mb-1.5">Kills / Partida</label>
-                <input type="number" step="0.1" min="0" value={editAvgKills} onChange={e => setEditAvgKills(e.target.value)}
-                  placeholder="4.5"
-                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
-              </div>
-              <div>
-                <label className="block text-[9px] text-white/40 uppercase tracking-widest mb-1.5">Rango Clasificatoria</label>
+              {isShooter && (
+                <>
+                  <div>
+                    <label className="block text-[9px] text-white/40 uppercase tracking-widest mb-1.5">K/D Promedio</label>
+                    <input type="number" step="0.01" min="0" value={editKd} onChange={e => setEditKd(e.target.value)}
+                      placeholder="1.50"
+                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] text-white/40 uppercase tracking-widest mb-1.5">Kills / Partida</label>
+                    <input type="number" step="0.1" min="0" value={editAvgKills} onChange={e => setEditAvgKills(e.target.value)}
+                      placeholder="4.5"
+                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
+                  </div>
+                </>
+              )}
+              <div className={isShooter ? "" : "col-span-2"}>
+                <label className="block text-[9px] text-white/40 uppercase tracking-widest mb-1.5">
+                  {tournamentDiscipline === 'clash_royale' ? "Copas / Arena / Liga" : "Rango Clasificatoria"}
+                </label>
                 <input type="text" value={editRank} onChange={e => setEditRank(e.target.value)}
-                  placeholder="Oro / Platino / Diamante..."
+                  placeholder={tournamentDiscipline === 'clash_royale' ? "Ej. 7500 copas / Arena Real" : "Oro / Platino / Diamante..."}
                   className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
               </div>
-              <div>
-                <label className="block text-[9px] text-white/40 uppercase tracking-widest mb-1.5">Posición Prom. BR</label>
-                <input type="number" step="1" min="1" value={editBrPlacement} onChange={e => setEditBrPlacement(e.target.value)}
-                  placeholder="8"
-                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
-              </div>
+              {isShooter && (
+                <div>
+                  <label className="block text-[9px] text-white/40 uppercase tracking-widest mb-1.5">Posición Prom. BR</label>
+                  <input type="number" step="1" min="1" value={editBrPlacement} onChange={e => setEditBrPlacement(e.target.value)}
+                    placeholder="8"
+                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
+                </div>
+              )}
             </div>
 
             <div className="mt-3">

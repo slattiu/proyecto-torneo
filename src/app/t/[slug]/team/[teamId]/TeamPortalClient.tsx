@@ -190,7 +190,7 @@ export function TeamPortalClient({
           >
             {participants.map(p => (
               <option key={p.id} value={p.id}>
-                {p.display_name} {p.is_captain ? '(C)' : ''}
+                {p.display_name} {p.is_captain && tournament.mode !== 'individual' ? '(C)' : ''}
               </option>
             ))}
           </select>
