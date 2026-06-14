@@ -10,7 +10,6 @@ import { MatchRecap } from './MatchRecap'
 import { TeamDetails } from './TeamDetails'
 import { NumberTicker } from '@/components/ui/NumberTicker'
 
-import { syncStandings } from '@/lib/actions/submissions'
 import { AdPlacement } from '@/components/federation/AdPlacement'
 import type { AdBanner } from '@/lib/actions/federation'
 import { trackEvent } from '@/lib/analytics'
@@ -261,19 +260,23 @@ export function LeaderboardClient({
     setIsSyncing(true)
     setSyncStatus('Sincronizando...')
     try {
-      const res = await syncStandings(tournamentId)
-      if (res && 'success' in res) {
+      // Call the public API route (uses admin client, no user auth required)
+      const res = await fetch(`/api/sync-standings?tournamentId=${tournamentId}`)
+      const data = await res.json()
+      if (res.ok && data.success) {
         setSyncStatus('¡Marcador actualizado!')
-        // Refresh page to get latest formatted results from server side too
-        window.location.reload()
+        // Refresh standings from DB without full page reload
+        await refreshStandingsFromDB()
+        setTimeout(() => setSyncStatus(null), 3000)
       } else {
         setSyncStatus('Error al sincronizar')
+        setTimeout(() => setSyncStatus(null), 3000)
       }
     } catch (err) {
       setSyncStatus('Fallo de red')
+      setTimeout(() => setSyncStatus(null), 3000)
     } finally {
       setIsSyncing(false)
-      setTimeout(() => setSyncStatus(null), 3000)
     }
   }
 
