@@ -59,6 +59,7 @@ export function ParticipantsManager({
   const [editAvgKills, setEditAvgKills] = useState('')
   const [editRank, setEditRank] = useState('')
   const [editBrPlacement, setEditBrPlacement] = useState('')
+  const [editColor, setEditColor] = useState('')
   const [editStatsLoading, setEditStatsLoading] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -174,6 +175,7 @@ export function ParticipantsManager({
     setEditAvgKills(p.avgKills != null ? String(p.avgKills) : '')
     setEditRank(p.classificationRank ?? '')
     setEditBrPlacement(p.brAvgPlacement != null ? String(p.brAvgPlacement) : '')
+    setEditColor(p.color ?? '')
   }
 
   const handleSaveStats = async () => {
@@ -184,6 +186,7 @@ export function ParticipantsManager({
       avgKills:           editAvgKills     ? Number(editAvgKills)     : undefined,
       classificationRank: editRank         || undefined,
       brAvgPlacement:     editBrPlacement  ? Number(editBrPlacement)  : undefined,
+      color:              editColor       || undefined,
     } as any)
     if ('error' in res) {
       toast.error(res.error)
@@ -194,6 +197,7 @@ export function ParticipantsManager({
         avgKills:           editAvgKills     ? Number(editAvgKills)     : undefined,
         classificationRank: editRank         || undefined,
         brAvgPlacement:     editBrPlacement  ? Number(editBrPlacement)  : undefined,
+        color:              editColor       || undefined,
       } : p))
       toast.success('Stats actualizadas')
       setEditingStats(null)
@@ -625,6 +629,17 @@ export function ParticipantsManager({
                 <input type="number" step="1" min="1" value={editBrPlacement} onChange={e => setEditBrPlacement(e.target.value)}
                   placeholder="8"
                   className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-[9px] text-white/40 uppercase tracking-widest mb-1.5">Color de Tarjeta (Hex)</label>
+              <div className="flex gap-2">
+                <input type="color" value={editColor || '#00F5FF'} onChange={e => setEditColor(e.target.value)}
+                  className="w-9 h-9 rounded-lg bg-black/40 border border-white/10 p-0 cursor-pointer overflow-hidden outline-none focus:border-neon-cyan/50 shrink-0" />
+                <input type="text" value={editColor} onChange={e => setEditColor(e.target.value)}
+                  placeholder="#00F5FF"
+                  className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
               </div>
             </div>
 

@@ -657,7 +657,7 @@ export function LeaderboardClient({
         .eq('tournament_id', tournamentId),
       supabase
         .from('teams')
-        .select('id, name, avatar_url, stream_url, participants(id, team_id, display_name, avatar_url, stream_url, is_captain, total_kills, kd_ratio, avg_kills, classification_rank, br_avg_placement)')
+        .select('id, name, avatar_url, stream_url, participants(id, team_id, display_name, avatar_url, stream_url, is_captain, total_kills, kd_ratio, avg_kills, classification_rank, br_avg_placement, color)')
         .eq('tournament_id', tournamentId)
         .order('created_at', { ascending: true }),
       supabase
@@ -724,6 +724,7 @@ export function LeaderboardClient({
         avgKills:           p.avg_kills            ?? undefined,
         classificationRank: p.classification_rank  ?? undefined,
         brAvgPlacement:     p.br_avg_placement      ?? undefined,
+        color:              p.color                 ?? undefined,
       }))
     }))
 

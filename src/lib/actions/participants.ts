@@ -156,6 +156,7 @@ export async function addParticipant(
       stream_url: parsed.data.streamUrl || null,
       team_id: parsed.data.teamId || null,
       is_captain: parsed.data.isCaptain,
+      color: parsed.data.color || null,
     })
     .select()
     .single()
@@ -186,6 +187,7 @@ export async function addParticipant(
       avgKills:           participant.avg_kills          ?? undefined,
       classificationRank: participant.classification_rank ?? undefined,
       brAvgPlacement:     participant.br_avg_placement   ?? undefined,
+      color:              participant.color              ?? undefined,
     }
   }
 }
@@ -268,6 +270,7 @@ export async function getTeamsWithParticipants(tournamentId: string) {
     avgKills:           p.avg_kills            ?? undefined,
     classificationRank: p.classification_rank  ?? undefined,
     brAvgPlacement:     p.br_avg_placement      ?? undefined,
+    color:              p.color                 ?? undefined,
   }))
 
   return { teams: mappedTeams, participants: mappedParticipants }
@@ -388,6 +391,7 @@ export async function updateParticipant(
       avg_kills:             d.avgKills        ?? null,
       classification_rank:   d.classificationRank ?? null,
       br_avg_placement:      d.brAvgPlacement  ?? null,
+      color:                 data.color       ?? null,
     })
     .eq('id', participantId)
     .eq('tournament_id', tournamentId)
@@ -421,6 +425,7 @@ export async function updateParticipant(
       avgKills:            participant.avg_kills         ?? undefined,
       classificationRank:  participant.classification_rank ?? undefined,
       brAvgPlacement:      participant.br_avg_placement  ?? undefined,
+      color:               participant.color            ?? undefined,
     }
   }
 }

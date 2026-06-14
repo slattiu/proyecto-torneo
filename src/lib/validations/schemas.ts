@@ -108,6 +108,7 @@ export const participantSchema = z.object({
   streamUrl: z.string().url().optional().or(z.literal('')),
   teamId: z.string().uuid().optional(),
   isCaptain: z.boolean().default(false),
+  color: z.string().max(30).optional().or(z.literal('')),
 })
 
 export const submissionSchema = z.object({

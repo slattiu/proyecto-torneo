@@ -101,6 +101,7 @@ export interface Participant {
   avgKills?: number;
   classificationRank?: string;
   brAvgPlacement?: number;
+  color?: string;
 }
 
 export interface Submission {

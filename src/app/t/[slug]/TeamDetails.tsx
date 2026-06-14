@@ -158,6 +158,22 @@ export function TeamDetails({
     return Math.min(...ranks)
   }, [teamSubmissions])
 
+  const playerColor = useMemo(() => {
+    return (selectedPlayer && selectedPlayer.color) ? selectedPlayer.color : primaryColor
+  }, [primaryColor, selectedPlayer])
+
+  const rgbColor = useMemo(() => {
+    const cleanHex = playerColor.replace('#', '')
+    const r = parseInt(cleanHex.substring(0, 2), 16)
+    const g = parseInt(cleanHex.substring(2, 4), 16)
+    const b = parseInt(cleanHex.substring(4, 6), 16)
+    return isNaN(r) || isNaN(g) || isNaN(b) ? '0, 245, 255' : `${r}, ${g}, ${b}`
+  }, [playerColor])
+
+  const primaryGlowHex = useMemo(() => {
+    return playerColor.replace('#', '%23')
+  }, [playerColor])
+
   if (!isMounted) {
     return (
       <div className="p-4 sm:p-8 bg-white/[0.01] border-t border-white/5 h-[600px] flex items-center justify-center">
@@ -182,31 +198,31 @@ export function TeamDetails({
           style={{
             minHeight: '420px',
             background: 'linear-gradient(135deg, #0a0a0c 0%, #0d0d10 50%, #0a0c0a 100%)',
-            border: '1px solid rgba(239,68,68,0.2)',
+            border: `1px solid rgba(${rgbColor}, 0.2)`,
             borderRadius: '4px',
           }}
         >
           {/* Hex grid background */}
           <div style={{
             position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.04,
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0 L40 10 L40 30 L20 40 L0 30 L0 10 Z' fill='none' stroke='%23ef4444' stroke-width='0.5'/%3E%3C/svg%3E")`,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0 L40 10 L40 30 L20 40 L0 30 L0 10 Z' fill='none' stroke='${primaryGlowHex}' stroke-width='0.5'/%3E%3C/svg%3E")`,
             backgroundSize: '40px 40px',
           }} />
-          {/* Blood-red radial behind player */}
+          {/* Theme-colored radial behind player */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
             style={{
               position: 'absolute', top: 0, left: 0, width: '55%', height: '100%',
-              background: 'radial-gradient(ellipse 70% 90% at 30% 60%, rgba(239,68,68,0.12) 0%, rgba(180,40,40,0.06) 40%, transparent 70%)',
+              background: `radial-gradient(ellipse 70% 90% at 30% 60%, rgba(${rgbColor}, 0.12) 0%, rgba(${rgbColor}, 0.06) 40%, transparent 70%)`,
               pointerEvents: 'none',
             }}
           />
           {/* Diagonal slash accent */}
           <div style={{
             position: 'absolute', top: 0, left: '38%', width: '3px', height: '100%',
-            background: 'linear-gradient(180deg, transparent, rgba(239,68,68,0.4) 30%, rgba(239,68,68,0.6) 50%, rgba(239,68,68,0.4) 70%, transparent)',
+            background: `linear-gradient(180deg, transparent, rgba(${rgbColor}, 0.4) 30%, rgba(${rgbColor}, 0.6) 50%, rgba(${rgbColor}, 0.4) 70%, transparent)`,
             transform: 'skewX(-8deg)', pointerEvents: 'none',
           }} />
 
@@ -215,9 +231,9 @@ export function TeamDetails({
             <button
               onClick={() => setSelectedPlayerId(null)}
               className="flex items-center gap-2 transition-colors text-[9px] font-black uppercase tracking-[0.25em]"
-              style={{ color: 'rgba(239,68,68,0.6)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(239,68,68,0.6)')}
+              style={{ color: `rgba(${rgbColor}, 0.6)` }}
+              onMouseEnter={e => (e.currentTarget.style.color = playerColor)}
+              onMouseLeave={e => (e.currentTarget.style.color = `rgba(${rgbColor}, 0.6)`)}
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -228,7 +244,7 @@ export function TeamDetails({
               <motion.div
                 animate={{ opacity: [1, 0.3, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }}
+                style={{ width: '6px', height: '6px', borderRadius: '50%', background: playerColor }}
               />
               <span style={{ fontSize: '0.55rem', fontFamily: 'Orbitron, sans-serif', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.2)' }}>
                 {teamName.toUpperCase()}
@@ -251,15 +267,15 @@ export function TeamDetails({
               <div style={{
                 position: 'absolute', bottom: '0px', left: '50%', transform: 'translateX(-50%)',
                 width: '180px', height: '50px',
-                background: 'radial-gradient(ellipse, rgba(239,68,68,0.4) 0%, transparent 70%)',
+                background: `radial-gradient(ellipse, rgba(${rgbColor}, 0.4) 0%, transparent 70%)`,
                 filter: 'blur(14px)', pointerEvents: 'none',
               }} />
               {/* Tactical corner brackets */}
               {[
-                { top: 12, left: 12, borderTop: '2px solid #ef4444', borderLeft: '2px solid #ef4444', w: 20, h: 20 },
-                { top: 12, right: 12, borderTop: '2px solid #ef4444', borderRight: '2px solid #ef4444', w: 20, h: 20 },
-                { bottom: 12, left: 12, borderBottom: '2px solid #ef4444', borderLeft: '2px solid #ef4444', w: 20, h: 20 },
-                { bottom: 12, right: 12, borderBottom: '2px solid #ef4444', borderRight: '2px solid #ef4444', w: 20, h: 20 },
+                { top: 12, left: 12, borderTop: `2px solid ${playerColor}`, borderLeft: `2px solid ${playerColor}`, w: 20, h: 20 },
+                { top: 12, right: 12, borderTop: `2px solid ${playerColor}`, borderRight: `2px solid ${playerColor}`, w: 20, h: 20 },
+                { bottom: 12, left: 12, borderBottom: `2px solid ${playerColor}`, borderLeft: `2px solid ${playerColor}`, w: 20, h: 20 },
+                { bottom: 12, right: 12, borderBottom: `2px solid ${playerColor}`, borderRight: `2px solid ${playerColor}`, w: 20, h: 20 },
               ].map((s, i) => (
                 <motion.div
                   key={i}
@@ -282,7 +298,7 @@ export function TeamDetails({
                 transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                 style={{
                   position: 'absolute', left: '10%', right: '10%', height: '1px',
-                  background: 'linear-gradient(90deg, transparent, rgba(239,68,68,0.6), transparent)',
+                  background: `linear-gradient(90deg, transparent, rgba(${rgbColor}, 0.6), transparent)`,
                   pointerEvents: 'none', zIndex: 3,
                 }}
               />
@@ -295,7 +311,7 @@ export function TeamDetails({
                   transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                   style={{
                     width: '170px', height: '250px', objectFit: 'contain',
-                    filter: 'drop-shadow(0 0 20px rgba(239,68,68,0.7)) drop-shadow(0 10px 40px rgba(0,0,0,0.95))',
+                    filter: `drop-shadow(0 0 20px rgba(${rgbColor}, 0.7)) drop-shadow(0 10px 40px rgba(0,0,0,0.95))`,
                     position: 'relative', zIndex: 2,
                   }}
                 />
@@ -306,8 +322,8 @@ export function TeamDetails({
                   style={{
                     position: 'relative', zIndex: 2, width: '150px', height: '210px',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem',
-                    background: 'linear-gradient(135deg, rgba(239,68,68,0.1), rgba(0,0,0,0.4))',
-                    border: '1px solid rgba(239,68,68,0.2)',
+                    background: `linear-gradient(135deg, rgba(${rgbColor}, 0.1), rgba(0,0,0,0.4))`,
+                    border: `1px solid rgba(${rgbColor}, 0.2)`,
                   }}
                 >👤</motion.div>
               )}
@@ -324,8 +340,8 @@ export function TeamDetails({
               >
                 {selectedPlayer.isCaptain && (
                   <span style={{
-                    background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)',
-                    color: '#ef4444', fontSize: '0.45rem',
+                    background: `rgba(${rgbColor}, 0.15)`, border: `1px solid rgba(${rgbColor}, 0.5)`,
+                    color: playerColor, fontSize: '0.45rem',
                     fontFamily: 'Orbitron, sans-serif', letterSpacing: '0.25em',
                     padding: '3px 10px', clipPath: 'polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)',
                   }}>▲ CAPITÁN</span>
@@ -346,20 +362,20 @@ export function TeamDetails({
                   fontSize: 'clamp(2rem, 5vw, 3.2rem)',
                   fontWeight: 900, color: '#fff', lineHeight: 0.9,
                   letterSpacing: '-0.02em',
-                  textShadow: '0 0 30px rgba(239,68,68,0.5), 2px 0 0 rgba(239,68,68,0.3), -2px 0 0 rgba(0,200,255,0.15)',
+                  textShadow: `0 0 30px rgba(${rgbColor}, 0.5), 2px 0 0 rgba(${rgbColor}, 0.3), -2px 0 0 rgba(0,200,255,0.15)`,
                 }}>
                   {selectedPlayer.displayName.toUpperCase()}
                 </h2>
               </motion.div>
 
-              {/* Red divider */}
+              {/* Theme divider */}
               <motion.div
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ duration: 0.6, delay: 0.28 }}
                 style={{
                   height: '2px', marginTop: '0.75rem', marginBottom: '0.75rem',
-                  background: 'linear-gradient(90deg, #ef4444, rgba(239,68,68,0.3), transparent)',
+                  background: `linear-gradient(90deg, ${playerColor}, rgba(${rgbColor}, 0.3), transparent)`,
                   transformOrigin: 'left',
                 }}
               />
@@ -371,10 +387,13 @@ export function TeamDetails({
                 transition={{ delay: 0.32 }}
                 className="flex gap-5 mb-4"
               >
-                {[
-                  { label: 'KD TORNEO', value: Number(kd), dec: 2, color: '#f97316' },
-                  { label: 'BAJAS CONF.', value: calculatedPlayerKillsMap[selectedPlayer.id] || 0, dec: 0, color: '#ef4444' },
-                ].map(s => (
+                {(['clash_royale', 'street_fighter_6', 'super_smash_bros_ultimate', 'league_of_legends', 'valorant'].includes(discipline) ? [
+                  { label: 'PUNTOS', value: chartData.length > 0 ? chartData[chartData.length - 1].points : 0, dec: 0, color: playerColor },
+                  { label: 'PARTIDAS', value: teamSubmissions.length, dec: 0, color: playerColor },
+                ] : [
+                  { label: 'KD TORNEO', value: Number(kd), dec: 2, color: playerColor },
+                  { label: 'BAJAS CONF.', value: calculatedPlayerKillsMap[selectedPlayer.id] || 0, dec: 0, color: playerColor },
+                ]).map(s => (
                   <div key={s.label}>
                     <p style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'Orbitron, sans-serif', letterSpacing: '0.2em', marginBottom: '2px' }}>{s.label}</p>
                     <p style={{ fontSize: '2rem', fontFamily: 'Orbitron, sans-serif', fontWeight: 900, color: s.color, lineHeight: 1, textShadow: `0 0 20px ${s.color}66` }}>
@@ -385,20 +404,20 @@ export function TeamDetails({
               </motion.div>
 
               {/* Pre-tournament stats */}
-              {(selectedPlayer.kdRatio != null || selectedPlayer.avgKills != null || selectedPlayer.classificationRank || selectedPlayer.brAvgPlacement != null) && (
+              {!['clash_royale', 'street_fighter_6', 'super_smash_bros_ultimate', 'league_of_legends', 'valorant'].includes(discipline) && (selectedPlayer.kdRatio != null || selectedPlayer.avgKills != null || selectedPlayer.classificationRank || selectedPlayer.brAvgPlacement != null) && (
                 <div>
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.38 }}
-                    style={{ fontSize: '0.45rem', color: 'rgba(239,68,68,0.4)', fontFamily: 'Orbitron, sans-serif', letterSpacing: '0.25em', marginBottom: '0.5rem' }}
+                    style={{ fontSize: '0.45rem', color: `rgba(${rgbColor}, 0.4)`, fontFamily: 'Orbitron, sans-serif', letterSpacing: '0.25em', marginBottom: '0.5rem' }}
                   >◆ HISTORIAL DE COMBATE</motion.p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
-                      selectedPlayer.kdRatio != null && { label: 'K/D PROM.', value: Number(selectedPlayer.kdRatio).toFixed(2), color: '#f97316', bar: Math.min(Number(selectedPlayer.kdRatio) / 5, 1) },
-                      selectedPlayer.avgKills != null && { label: 'BAJAS/PARTIDA', value: Number(selectedPlayer.avgKills).toFixed(1), color: '#ef4444', bar: Math.min(Number(selectedPlayer.avgKills) / 15, 1) },
-                      selectedPlayer.classificationRank && { label: 'RANGO', value: selectedPlayer.classificationRank.toUpperCase(), color: '#fbbf24', bar: null },
-                      selectedPlayer.brAvgPlacement != null && { label: 'POS. BR', value: `#${Number(selectedPlayer.brAvgPlacement).toFixed(0)}`, color: '#94a3b8', bar: null },
+                      selectedPlayer.kdRatio != null && { label: 'K/D PROM.', value: Number(selectedPlayer.kdRatio).toFixed(2), color: playerColor, bar: Math.min(Number(selectedPlayer.kdRatio) / 5, 1) },
+                      selectedPlayer.avgKills != null && { label: 'BAJAS/PARTIDA', value: Number(selectedPlayer.avgKills).toFixed(1), color: playerColor, bar: Math.min(Number(selectedPlayer.avgKills) / 15, 1) },
+                      selectedPlayer.classificationRank && { label: 'RANGO MÁX', value: selectedPlayer.classificationRank, color: playerColor },
+                      selectedPlayer.brAvgPlacement != null && { label: 'PUESTO MEDIO', value: `#${Number(selectedPlayer.brAvgPlacement).toFixed(0)}`, color: playerColor, bar: 1 - Math.min(Number(selectedPlayer.brAvgPlacement) / 100, 1) }
                     ].filter(Boolean).map((s: any, i) => (
                       <motion.div
                         key={s.label}
@@ -406,8 +425,8 @@ export function TeamDetails({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.42 + i * 0.07 }}
                         style={{
-                          background: `linear-gradient(135deg, rgba(239,68,68,0.06), rgba(0,0,0,0.4))`,
-                          border: '1px solid rgba(239,68,68,0.15)',
+                          background: `linear-gradient(135deg, rgba(${rgbColor}, 0.06), rgba(0,0,0,0.4))`,
+                          border: `1px solid rgba(${rgbColor}, 0.15)`,
                           borderLeft: `2px solid ${s.color}`,
                           padding: '0.6rem 0.75rem',
                           clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%)',
