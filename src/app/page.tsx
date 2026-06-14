@@ -12,6 +12,18 @@ import { getOptimizedImageUrl } from '@/lib/utils'
 
 const orbitron = Orbitron({ subsets: ['latin'] })
 
+const DISCIPLINE_LABELS: Record<string, string> = {
+  warzone: 'CoD: Warzone 🪂',
+  clash_royale: 'Clash Royale 👑',
+  fortnite: 'Fortnite ⛏️',
+  free_fire: 'Free Fire 🔥',
+  call_of_duty_mobile: 'CoD Mobile 🔫',
+  street_fighter_6: 'Street Fighter 6 👊',
+  super_smash_bros_ultimate: 'Super Smash Bros Ultimate 💥',
+  league_of_legends: 'League of Legends 🏆',
+  valorant: 'Valorant 🎯',
+}
+
 export default async function Home() {
   const supabase = await createClient()
   const adminSupabase = await createAdminClient()
@@ -243,7 +255,10 @@ export default async function Home() {
                         <h3 className="font-orbitron font-bold text-sm text-white group-hover:text-neon-cyan transition-colors line-clamp-1">
                           {t.name}
                         </h3>
-                        <p className="text-white/40 text-[9px] uppercase tracking-wide mt-1">
+                        <p className="text-neon-cyan text-[10px] font-bold tracking-wider mt-1 uppercase">
+                          {t.discipline ? (DISCIPLINE_LABELS[t.discipline] || t.discipline.replace(/_/g, ' ')) : 'Juego General'}
+                        </p>
+                        <p className="text-white/40 text-[9px] uppercase tracking-wide mt-0.5">
                           Formato: {t.format ? t.format.replace(/_/g, ' ') : 'Estándar'}
                         </p>
                       </div>
