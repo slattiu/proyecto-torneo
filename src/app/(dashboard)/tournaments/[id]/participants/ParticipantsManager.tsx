@@ -67,6 +67,7 @@ export function ParticipantsManager({
   const [editRank, setEditRank] = useState('')
   const [editBrPlacement, setEditBrPlacement] = useState('')
   const [editColor, setEditColor] = useState('')
+  const [editStreamUrl, setEditStreamUrl] = useState('')
   const [editStatsLoading, setEditStatsLoading] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -183,6 +184,7 @@ export function ParticipantsManager({
     setEditRank(p.classificationRank ?? '')
     setEditBrPlacement(p.brAvgPlacement != null ? String(p.brAvgPlacement) : '')
     setEditColor(p.color ?? '')
+    setEditStreamUrl(p.streamUrl ?? '')
   }
 
   const handleSaveStats = async () => {
@@ -194,6 +196,7 @@ export function ParticipantsManager({
       classificationRank: editRank         || undefined,
       brAvgPlacement:     editBrPlacement  ? Number(editBrPlacement)  : undefined,
       color:              editColor       || undefined,
+      streamUrl:          editStreamUrl   || null,
     } as any)
     if ('error' in res) {
       toast.error(res.error)
@@ -205,6 +208,7 @@ export function ParticipantsManager({
         classificationRank: editRank         || undefined,
         brAvgPlacement:     editBrPlacement  ? Number(editBrPlacement)  : undefined,
         color:              editColor       || undefined,
+        streamUrl:          editStreamUrl   || undefined,
       } : p))
       toast.success('Stats actualizadas')
       setEditingStats(null)
@@ -664,6 +668,13 @@ export function ParticipantsManager({
                     className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
                 </div>
               )}
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-[9px] text-white/40 uppercase tracking-widest mb-1.5">Link de Transmisión (Twitch/YouTube/Kick)</label>
+              <input type="url" value={editStreamUrl} onChange={e => setEditStreamUrl(e.target.value)}
+                placeholder="https://kick.com/..."
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" />
             </div>
 
             <div className="mt-3">
