@@ -51,6 +51,7 @@ export default async function Home() {
       adminSupabase.from('tournaments')
         .select('*, teams(id)')
         .or('is_private.eq.false,is_private.is.null')
+        .neq('status', 'finished')
         .order('created_at', { ascending: false })
         .limit(3)
     ])
