@@ -1075,7 +1075,7 @@ export function LeaderboardClient({
             {currentStatus === 'active' && (
               <span className="text-xs font-bold bg-red-500/10 border border-red-500/20 px-3.5 py-1.5 rounded-full text-red-400 uppercase tracking-widest animate-pulse flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                ● En Vivo
+                En Vivo
               </span>
             )}
             {currentStatus === 'pending' && (
