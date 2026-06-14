@@ -92,6 +92,7 @@ export function ParticipantsManager({
           displayName: playerName,
           teamId: tRes.data.id,
           isCaptain: true,
+          streamUrl: streamUrl || undefined,
         })
         if ('error' in pRes) throw new Error(pRes.error)
         
@@ -201,6 +202,13 @@ export function ParticipantsManager({
     if ('error' in res) {
       toast.error(res.error)
     } else {
+      if (isIndividual && editingStats.teamId) {
+        await updateTeam(tournamentId, editingStats.teamId, {
+          name: editingStats.displayName,
+          streamUrl: editStreamUrl || null,
+        } as any)
+        setTeams(teams.map(t => t.id === editingStats.teamId ? { ...t, streamUrl: editStreamUrl || undefined } : t))
+      }
       setParticipants(participants.map(p => p.id === editingStats.id ? {
         ...p,
         kdRatio:            editKd          ? Number(editKd)          : undefined,
