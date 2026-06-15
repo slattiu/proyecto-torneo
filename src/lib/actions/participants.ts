@@ -109,6 +109,16 @@ export async function deleteTeam(
     return { error: 'Sin permisos' }
   }
 
+  // 1. Eliminar todos los participantes vinculados a este equipo primero
+  const { error: partDeleteErr } = await supabase
+    .from('participants')
+    .delete()
+    .eq('team_id', teamId)
+    .eq('tournament_id', tournamentId)
+
+  if (partDeleteErr) return { error: partDeleteErr.message }
+
+  // 2. Eliminar el equipo
   const { error } = await supabase
     .from('teams')
     .delete()
