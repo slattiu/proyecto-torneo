@@ -19,6 +19,10 @@ export default async function ProfilePage() {
       id,
       tournament_id,
       team_id,
+      total_kills,
+      kd_ratio,
+      avg_kills,
+      br_avg_placement,
       tournaments (
         id,
         name,

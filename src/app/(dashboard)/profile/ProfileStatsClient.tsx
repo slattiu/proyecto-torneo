@@ -90,6 +90,97 @@ export function ProfileStatsClient({
     }))
   }, [participations])
 
+  // 3. Aggregate stats by game discipline
+  const disciplineStats = useMemo(() => {
+    const statsMap: Record<string, {
+      discipline: string
+      tournamentsPlayed: number
+      totalKills: number
+      totalPoints: number
+      bestRank: number | null
+      kdRatios: number[]
+      avgKillsList: number[]
+      brPlacements: number[]
+    }> = {}
+
+    participations.forEach((p) => {
+      const disc = p.tournaments?.discipline
+      if (!disc) return
+
+      if (!statsMap[disc]) {
+        statsMap[disc] = {
+          discipline: disc,
+          tournamentsPlayed: 0,
+          totalKills: 0,
+          totalPoints: 0,
+          bestRank: null,
+          kdRatios: [],
+          avgKillsList: [],
+          brPlacements: []
+        }
+      }
+
+      const ds = statsMap[disc]
+      ds.tournamentsPlayed++
+
+      if (p.total_kills !== undefined && p.total_kills !== null) {
+        ds.totalKills += Number(p.total_kills)
+      }
+
+      if (p.kd_ratio !== undefined && p.kd_ratio !== null && Number(p.kd_ratio) > 0) {
+        ds.kdRatios.push(Number(p.kd_ratio))
+      }
+
+      if (p.avg_kills !== undefined && p.avg_kills !== null && Number(p.avg_kills) > 0) {
+        ds.avgKillsList.push(Number(p.avg_kills))
+      }
+
+      if (p.br_avg_placement !== undefined && p.br_avg_placement !== null && Number(p.br_avg_placement) > 0) {
+        ds.brPlacements.push(Number(p.br_avg_placement))
+      }
+
+      const standing = p.teams?.team_standings?.[0] || p.teams?.team_standings
+      if (standing) {
+        if (standing.total_points !== undefined && standing.total_points !== null) {
+          ds.totalPoints += Number(standing.total_points)
+        }
+        const r = Number(standing.rank)
+        if (r > 0) {
+          if (ds.bestRank === null || r < ds.bestRank) {
+            ds.bestRank = r
+          }
+        }
+      }
+    })
+
+    return Object.values(statsMap).map((ds) => {
+      const avgKd = ds.kdRatios.length > 0
+        ? ds.kdRatios.reduce((a, b) => a + b, 0) / ds.kdRatios.length
+        : null
+
+      const avgKills = ds.avgKillsList.length > 0
+        ? ds.avgKillsList.reduce((a, b) => a + b, 0) / ds.avgKillsList.length
+        : ds.tournamentsPlayed > 0
+          ? ds.totalKills / ds.tournamentsPlayed
+          : 0
+
+      const avgBrPlacement = ds.brPlacements.length > 0
+        ? ds.brPlacements.reduce((a, b) => a + b, 0) / ds.brPlacements.length
+        : null
+
+      return {
+        discipline: ds.discipline,
+        tournamentsPlayed: ds.tournamentsPlayed,
+        totalKills: ds.totalKills,
+        totalPoints: ds.totalPoints,
+        bestRank: ds.bestRank,
+        avgKd,
+        avgKills,
+        avgBrPlacement
+      }
+    })
+  }, [participations])
+
   return (
     <div className="space-y-6">
       {/* Account Info Card */}
@@ -279,6 +370,87 @@ export function ProfileStatsClient({
 
         {activeTab === 'stats' && (
           <div className="space-y-6">
+            {/* Resumen de Promedios por Juego */}
+            <div className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-6 space-y-4">
+              <h3 className="text-white font-orbitron font-bold text-sm uppercase tracking-wider">
+                Desempeño Promedio por Juego
+              </h3>
+              {disciplineStats.length === 0 ? (
+                <div className="text-center py-10 text-white/30 text-sm">
+                  Participa en torneos para ver tus promedios por juego aquí.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {disciplineStats.map((ds) => {
+                    const isShooter = ['warzone', 'fortnite', 'free_fire', 'call_of_duty_mobile'].includes(ds.discipline)
+                    return (
+                      <div
+                        key={ds.discipline}
+                        className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4 hover:border-white/10 transition-colors animate-fade-in"
+                      >
+                        <div className="flex justify-between items-center border-b border-white/5 pb-2.5">
+                          <span className="font-orbitron font-black text-sm text-neon-cyan uppercase tracking-wider">
+                            {GAME_NAMES[ds.discipline] || ds.discipline}
+                          </span>
+                          <span className="text-[10px] bg-white/5 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider text-white/50">
+                            {ds.tournamentsPlayed} {ds.tournamentsPlayed === 1 ? 'Torneo' : 'Torneos'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <span className="text-[9px] text-white/40 uppercase tracking-wider block font-bold">Mejor Puesto</span>
+                            <span className="text-white font-orbitron font-bold text-base">
+                              {ds.bestRank ? `#${ds.bestRank}` : '—'}
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[9px] text-white/40 uppercase tracking-wider block font-bold">Puntos Totales</span>
+                            <span className="text-white font-orbitron font-bold text-base">
+                              {ds.totalPoints.toFixed(1)}
+                            </span>
+                          </div>
+
+                          {isShooter ? (
+                            <>
+                              <div className="space-y-1">
+                                <span className="text-[9px] text-white/40 uppercase tracking-wider block font-bold">Promedio K/D</span>
+                                <span className="text-neon-purple font-orbitron font-bold text-base">
+                                  {ds.avgKd !== null ? ds.avgKd.toFixed(2) : '—'}
+                                </span>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-[9px] text-white/40 uppercase tracking-wider block font-bold">Kills Promedio</span>
+                                <span className="text-white font-orbitron font-bold text-base">
+                                  {ds.avgKills.toFixed(1)}
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="col-span-2 space-y-1">
+                              <span className="text-[9px] text-white/40 uppercase tracking-wider block font-bold">Asesinatos (Kills) Totales</span>
+                              <span className="text-white font-orbitron font-bold text-base">
+                                {ds.totalKills}
+                              </span>
+                            </div>
+                          )}
+
+                          {ds.avgBrPlacement !== null && (
+                            <div className="col-span-2 space-y-1 border-t border-white/5 pt-2">
+                              <span className="text-[9px] text-white/40 uppercase tracking-wider block font-bold">Puesto Promedio (BR)</span>
+                              <span className="text-yellow-500 font-orbitron font-bold text-base">
+                                #{ds.avgBrPlacement.toFixed(1)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
             {/* Evolution chart */}
             <div className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-6">
               <h3 className="text-white font-orbitron font-bold text-sm uppercase tracking-wider mb-4">
