@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts'
 import { updateProfile, uploadProfileAvatar } from '@/lib/actions/profile'
+import { getFriendsList, searchUsersForFriends, sendFriendRequest, removeFriend } from '@/lib/actions/friends'
 import { toast } from 'sonner'
 
 interface ProfileStatsClientProps {
@@ -73,14 +74,79 @@ export function ProfileStatsClient({
   updateProfileForm,
   subscriptionCard,
 }: ProfileStatsClientProps) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'badges' | 'stats'>(
+  const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'badges' | 'stats' | 'friends'>(
     participations.some(p => {
       const tourney = p.tournaments
       return tourney && (tourney.status === 'pending' || new Date(tourney.start_date) > new Date())
     }) ? 'history' : 'profile'
   )
   const [username, setUsername] = useState(profile?.username ?? '')
+  const [streamUrl, setStreamUrl] = useState(profile?.stream_url ?? '')
   const [isSaving, setIsSaving] = useState(false)
+
+  // Friends states
+  const [friends, setFriends] = useState<any[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [loadingFriends, setLoadingFriends] = useState(false)
+  const [searchingUsers, setSearchingUsers] = useState(false)
+
+  useEffect(() => {
+    if (activeTab === 'friends') {
+      const loadFriends = async () => {
+        setLoadingFriends(true)
+        const res = await getFriendsList()
+        if (res && 'data' in res) {
+          setFriends(res.data)
+        } else if (res && 'error' in res) {
+          toast.error(res.error)
+        }
+        setLoadingFriends(false)
+      }
+      loadFriends()
+    }
+  }, [activeTab])
+
+  const handleSearchUsers = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim().length < 2) {
+      toast.error('Ingresa al menos 2 caracteres para buscar')
+      return
+    }
+    setSearchingUsers(true)
+    const res = await searchUsersForFriends(searchQuery)
+    if (res && 'data' in res) {
+      setSearchResults(res.data)
+    } else if (res && 'error' in res) {
+      toast.error(res.error)
+    }
+    setSearchingUsers(false)
+  }
+
+  const handleAddFriend = async (friendId: string) => {
+    const res = await sendFriendRequest(friendId)
+    if (res && 'success' in res) {
+      toast.success('¡Amigo agregado con éxito!')
+      setSearchResults(prev => prev.filter(p => p.id !== friendId))
+      const listRes = await getFriendsList()
+      if (listRes && 'data' in listRes) {
+        setFriends(listRes.data)
+      }
+    } else if (res && 'error' in res) {
+      toast.error(res.error)
+    }
+  }
+
+  const handleRemoveFriend = async (friendId: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar a este amigo?')) return
+    const res = await removeFriend(friendId)
+    if (res && 'success' in res) {
+      toast.success('Amigo eliminado')
+      setFriends(prev => prev.filter(f => f.id !== friendId))
+    } else if (res && 'error' in res) {
+      toast.error(res.error)
+    }
+  }
 
   const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -92,6 +158,7 @@ export function ProfileStatsClient({
     try {
       const formData = new FormData()
       formData.append('username', username.trim())
+      formData.append('stream_url', streamUrl.trim())
       const res = await updateProfile(formData)
       if (res && 'error' in res) {
         toast.error(res.error)
@@ -340,10 +407,10 @@ export function ProfileStatsClient({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-white/5">
+      <div className="flex border-b border-white/5 overflow-x-auto scrollbar-hide">
         <button
           onClick={() => setActiveTab('profile')}
-          className={`flex-1 py-3 text-xs uppercase font-bold tracking-widest transition-colors border-b-2 ${
+          className={`flex-1 min-w-[80px] py-3 text-xs uppercase font-bold tracking-widest transition-colors border-b-2 ${
             activeTab === 'profile'
               ? 'text-neon-cyan border-neon-cyan font-black'
               : 'text-white/40 border-transparent hover:text-white/60'
@@ -352,8 +419,18 @@ export function ProfileStatsClient({
           Ajustes
         </button>
         <button
+          onClick={() => setActiveTab('friends')}
+          className={`flex-1 min-w-[80px] py-3 text-xs uppercase font-bold tracking-widest transition-colors border-b-2 ${
+            activeTab === 'friends'
+              ? 'text-neon-cyan border-neon-cyan font-black'
+              : 'text-white/40 border-transparent hover:text-white/60'
+          }`}
+        >
+          Amigos
+        </button>
+        <button
           onClick={() => setActiveTab('history')}
-          className={`flex-1 py-3 text-xs uppercase font-bold tracking-widest transition-colors border-b-2 ${
+          className={`flex-1 min-w-[120px] py-3 text-xs uppercase font-bold tracking-widest transition-colors border-b-2 ${
             activeTab === 'history'
               ? 'text-neon-cyan border-neon-cyan font-black'
               : 'text-white/40 border-transparent hover:text-white/60'
@@ -363,7 +440,7 @@ export function ProfileStatsClient({
         </button>
         <button
           onClick={() => setActiveTab('badges')}
-          className={`flex-1 py-3 text-xs uppercase font-bold tracking-widest transition-colors border-b-2 ${
+          className={`flex-1 min-w-[110px] py-3 text-xs uppercase font-bold tracking-widest transition-colors border-b-2 ${
             activeTab === 'badges'
               ? 'text-neon-cyan border-neon-cyan font-black'
               : 'text-white/40 border-transparent hover:text-white/60'
@@ -373,7 +450,7 @@ export function ProfileStatsClient({
         </button>
         <button
           onClick={() => setActiveTab('stats')}
-          className={`flex-1 py-3 text-xs uppercase font-bold tracking-widest transition-colors border-b-2 ${
+          className={`flex-1 min-w-[100px] py-3 text-xs uppercase font-bold tracking-widest transition-colors border-b-2 ${
             activeTab === 'stats'
               ? 'text-neon-cyan border-neon-cyan font-black'
               : 'text-white/40 border-transparent hover:text-white/60'
@@ -389,6 +466,23 @@ export function ProfileStatsClient({
           <>
             <div className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-6 space-y-4">
               <h2 className="text-white font-orbitron font-bold text-sm uppercase tracking-wider mb-2">Editar perfil</h2>
+              <div className="p-3.5 bg-white/[0.02] border border-white/5 rounded-xl flex flex-col gap-1.5 mb-4">
+                <span className="text-[9px] uppercase font-bold tracking-wider text-white/40">Tu ID Único de Amigo</span>
+                <div className="flex items-center justify-between gap-2">
+                  <code className="text-xs font-mono text-neon-cyan select-all break-all">{user.id}</code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(user.id)
+                      toast.success('¡ID Copiado al portapapeles!')
+                    }}
+                    className="px-2.5 py-1 bg-white/5 border border-white/10 hover:bg-neon-cyan hover:text-black hover:border-neon-cyan transition-all rounded text-[9px] font-black uppercase tracking-wider shrink-0"
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <p className="text-[9px] text-white/30">Comparte este ID con tus amigos para que te agreguen al instante.</p>
+              </div>
               <form onSubmit={handleUpdateProfile} className="space-y-4">
                 <div>
                   <label htmlFor="username" className="block text-xs text-white/50 uppercase tracking-widest font-bold mb-1.5">
@@ -410,6 +504,25 @@ export function ProfileStatsClient({
                     </span>
                   </p>
                 </div>
+
+                <div>
+                  <label htmlFor="stream_url" className="block text-xs text-white/50 uppercase tracking-widest font-bold mb-1.5">
+                    Canal de Transmisión (URL)
+                  </label>
+                  <input
+                    id="stream_url"
+                    name="stream_url"
+                    type="text"
+                    value={streamUrl}
+                    onChange={(e) => setStreamUrl(e.target.value)}
+                    placeholder="https://twitch.tv/tu_canal"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 transition-colors"
+                  />
+                  <p className="text-[10px] text-white/40 mt-1">
+                    Ingresa tu canal de Twitch, Kick, YouTube o Facebook Gaming para precargarlo en tus inscripciones.
+                  </p>
+                </div>
+
                 <button
                   type="submit"
                   disabled={isSaving}
@@ -421,6 +534,121 @@ export function ProfileStatsClient({
             </div>
             {subscriptionCard}
           </>
+        )}
+
+        {activeTab === 'friends' && (
+          <div className="space-y-6">
+            {/* Search users to add */}
+            <div className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-6">
+              <h3 className="text-white font-orbitron font-bold text-sm uppercase tracking-wider mb-4">
+                Buscar y Agregar Amigos
+              </h3>
+              <form onSubmit={handleSearchUsers} className="flex gap-2">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar por nickname..."
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 transition-colors text-xs"
+                />
+                <button
+                  type="submit"
+                  disabled={searchingUsers}
+                  className="px-5 py-3 bg-neon-cyan text-black font-bold text-xs uppercase tracking-wider rounded-xl transition-all hover:bg-neon-cyan/90 disabled:opacity-50 shrink-0"
+                >
+                  {searchingUsers ? 'Buscando...' : 'Buscar'}
+                </button>
+              </form>
+
+              {searchResults.length > 0 && (
+                <div className="mt-4 border-t border-white/5 pt-4 space-y-3">
+                  <h4 className="text-[10px] uppercase font-bold tracking-wider text-white/40">Resultados de búsqueda:</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {searchResults.map((result) => (
+                      <div key={result.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                            {result.avatar_url ? (
+                              <img src={result.avatar_url} alt={result.username} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs">👤</span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-white truncate">{result.username || 'Sin Nickname'}</p>
+                            {result.stream_url && (
+                              <span className="text-[9px] text-neon-cyan block truncate max-w-[120px]">📺 {result.stream_url}</span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleAddFriend(result.id)}
+                          className="px-2.5 py-1.5 bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-neon-cyan/20 transition-all"
+                        >
+                          + Agregar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Friends list */}
+            <div className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-6">
+              <h3 className="text-white font-orbitron font-bold text-sm uppercase tracking-wider mb-4">
+                Mi Lista de Amigos ({friends.length})
+              </h3>
+
+              {loadingFriends ? (
+                <div className="text-center py-10 text-white/30 text-sm">
+                  Cargando amigos...
+                </div>
+              ) : friends.length === 0 ? (
+                <div className="text-center py-10 text-white/30 text-xs border border-dashed border-white/5 rounded-2xl bg-white/[0.005]">
+                  Aún no tienes amigos agregados. Usa la barra de búsqueda superior para encontrar a tus compañeros de juego.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {friends.map((friend) => (
+                    <div key={friend.id} className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.01] border border-white/5 hover:border-white/10 transition-all">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                          {friend.avatar_url ? (
+                            <img src={friend.avatar_url} alt={friend.username} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-sm">👤</span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-white truncate">{friend.username || 'Sin Nickname'}</p>
+                          {friend.stream_url ? (
+                            <a 
+                              href={friend.stream_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-[9px] text-neon-cyan hover:underline block truncate max-w-[180px]"
+                            >
+                              📺 Ver canal
+                            </a>
+                          ) : (
+                            <span className="text-[9px] text-white/20">Sin canal de transmisión</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveFriend(friend.id)}
+                        className="p-2 text-white/30 hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-all text-xs"
+                        title="Eliminar amigo"
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {activeTab === 'history' && (

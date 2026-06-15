@@ -6,6 +6,7 @@ import { z } from 'zod'
 
 const updateProfileSchema = z.object({
   username: z.string().min(2, 'Mínimo 2 caracteres').max(30, 'Máximo 30 caracteres').regex(/^[a-zA-Z0-9_]+$/, 'Solo letras, números y guión bajo').nullable().optional(),
+  stream_url: z.string().url('URL inválida. Debe comenzar con http:// o https://').or(z.literal('')).nullable().optional(),
 })
 
 export async function updateProfile(formData: FormData) {
@@ -13,22 +14,26 @@ export async function updateProfile(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
 
-  const raw = formData.get('username')
+  const rawUsername = formData.get('username')
+  const rawStreamUrl = formData.get('stream_url')
+  
   const parsed = updateProfileSchema.safeParse({
-    username: raw === '' ? null : raw,
+    username: rawUsername === '' ? null : (rawUsername ? String(rawUsername) : undefined),
+    stream_url: rawStreamUrl === '' ? '' : (rawStreamUrl ? String(rawStreamUrl) : undefined),
   })
   if (!parsed.success) return { error: parsed.error.errors[0].message }
 
   const adminSupabase = await createAdminClient()
 
-  // Fetch existing profile to preserve role, check changes limit and uniqueness
+  // Fetch existing profile to preserve role, avatar_url, check changes limit and uniqueness
   const { data: existingProfile } = await adminSupabase
     .from('profiles')
-    .select('role, username, username_changes_count')
+    .select('role, username, username_changes_count, avatar_url')
     .eq('id', user.id)
     .maybeSingle()
 
   const role = existingProfile?.role || 'USER'
+  const avatar_url = existingProfile?.avatar_url || null
   let changesCount = existingProfile?.username_changes_count || 0
 
   const newUsername = parsed.data.username
@@ -56,13 +61,19 @@ export async function updateProfile(formData: FormData) {
     }
   }
 
+  // Preserve existing username if not specified
+  const finalUsername = newUsername !== undefined ? newUsername : (currentUsername || null)
+  const finalStreamUrl = parsed.data.stream_url !== undefined ? (parsed.data.stream_url || null) : (existingProfile?.stream_url || null)
+
   const { error } = await adminSupabase
     .from('profiles')
     .upsert({ 
       id: user.id, 
-      username: newUsername, 
+      username: finalUsername, 
       role,
+      avatar_url,
       username_changes_count: changesCount,
+      stream_url: finalStreamUrl,
       updated_at: new Date().toISOString() 
     })
 

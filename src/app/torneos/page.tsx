@@ -5,6 +5,7 @@ import { getProfile } from '@/lib/actions/auth-helpers'
 import { Navbar } from '@/components/navigation/Navbar'
 import { HomeTracker } from '@/components/analytics/HomeTracker'
 import { getOptimizedImageUrl } from '@/lib/utils'
+import { PublicCountdown } from '@/components/tournaments/PublicCountdown'
 
 const orbitron = Orbitron({ subsets: ['latin'] })
 
@@ -176,6 +177,14 @@ export default async function TorneosPublicosPage() {
                           </span>
                         </div>
                       )}
+
+                      <PublicCountdown 
+                        registrationStartDate={t.registration_start_date}
+                        registrationEndDate={t.registration_end_date}
+                        startDate={t.start_date}
+                        endDate={t.end_date}
+                        status={t.status}
+                      />
                     </div>
                   </div>
 

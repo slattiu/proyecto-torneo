@@ -14,6 +14,7 @@ import { AdPlacement } from '@/components/federation/AdPlacement'
 import type { AdBanner } from '@/lib/actions/federation'
 import { trackEvent } from '@/lib/analytics'
 import { registerTournament } from '@/lib/actions/registration'
+import { getFriendsList } from '@/lib/actions/friends'
 import { toast } from 'sonner'
 
 const orbitron = Orbitron({ subsets: ['latin'] })
@@ -106,19 +107,54 @@ export function LeaderboardClient({
   const [regTeamName, setRegTeamName] = useState('')
   const [regStreamUrl, setRegStreamUrl] = useState('')
   const [regParticipants, setRegParticipants] = useState<string[]>([])
+  const [regParticipantUserIds, setRegParticipantUserIds] = useState<(string | null)[]>([])
+  const [regParticipantStreams, setRegParticipantStreams] = useState<string[]>([])
+  const [userFriends, setUserFriends] = useState<any[]>([])
   const [regPassword, setRegPassword] = useState('')
   const [regLoading, setRegLoading] = useState(false)
 
-  const handleOpenRegistration = () => {
+  const handleOpenRegistration = async () => {
     const size = { individual: 1, duos: 2, trios: 3, cuartetos: 4, quintas: 5 }[mode] || 1
     const initialParticipants = Array(size).fill('')
+    const initialUserIds = Array(size).fill(null)
+    const initialStreams = Array(size).fill('')
+
     if (currentUser) {
-      initialParticipants[0] = currentUser.email.split('@')[0]
+      try {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('username, stream_url')
+          .eq('id', currentUser.id)
+          .maybeSingle()
+
+        if (prof) {
+          initialParticipants[0] = prof.username || currentUser.email.split('@')[0]
+          initialStreams[0] = prof.stream_url || ''
+        } else {
+          initialParticipants[0] = currentUser.email.split('@')[0]
+        }
+      } catch (err) {
+        initialParticipants[0] = currentUser.email.split('@')[0]
+      }
+      initialUserIds[0] = currentUser.id
     }
+
     setRegParticipants(initialParticipants)
+    setRegParticipantUserIds(initialUserIds)
+    setRegParticipantStreams(initialStreams)
     setRegTeamName('')
-    setRegStreamUrl('')
+    setRegStreamUrl(initialStreams[0] || '')
     setRegPassword('')
+
+    try {
+      const friendsRes = await getFriendsList()
+      if (friendsRes && 'data' in friendsRes) {
+        setUserFriends(friendsRes.data || [])
+      }
+    } catch (err) {
+      console.error('Error fetching friends:', err)
+    }
+
     setIsRegistering(true)
   }
 
@@ -126,7 +162,6 @@ export function LeaderboardClient({
     e.preventDefault()
     setRegLoading(true)
     try {
-      // Validate all names are filled
       const emptyNameIndex = regParticipants.findIndex(name => name.trim() === '')
       if (emptyNameIndex !== -1) {
         toast.error(`Por favor, completa el nombre del Integrante ${emptyNameIndex + 1}`)
@@ -140,7 +175,12 @@ export function LeaderboardClient({
         return
       }
 
-      const members = regParticipants.map(name => ({ displayName: name }))
+      const members = regParticipants.map((name, index) => ({
+        displayName: name,
+        userId: regParticipantUserIds[index] || undefined,
+        streamUrl: regParticipantStreams[index] || undefined
+      }))
+
       const res = await registerTournament(tournamentId, {
         teamName: mode === 'individual' ? regParticipants[0] : regTeamName,
         streamUrl: regStreamUrl || undefined,
@@ -1919,10 +1959,48 @@ export function LeaderboardClient({
                       Integrantes ({regParticipants.length})
                     </label>
                     {regParticipants.map((name, idx) => (
-                      <div key={idx}>
-                        <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider block mb-1.5 ml-1">
+                      <div key={idx} className="space-y-1.5 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                        <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider block ml-1">
                           {mode === 'individual' ? 'Tu GamerTag / Nombre' : idx === 0 ? 'Integrante 1 (Capitán / Tú)' : `Integrante ${idx + 1}`}
                         </span>
+
+                        {idx > 0 && userFriends.length > 0 && (
+                          <div>
+                            <select
+                              onChange={e => {
+                                const val = e.target.value
+                                const newParticipants = [...regParticipants]
+                                const newIds = [...regParticipantUserIds]
+                                const newStreams = [...regParticipantStreams]
+
+                                if (val === 'manual') {
+                                  newIds[idx] = null
+                                  newParticipants[idx] = ''
+                                } else {
+                                  const friend = userFriends.find(f => f.id === val)
+                                  if (friend) {
+                                    newIds[idx] = friend.id
+                                    newParticipants[idx] = friend.username || ''
+                                    newStreams[idx] = friend.stream_url || ''
+                                  }
+                                }
+                                setRegParticipants(newParticipants)
+                                setRegParticipantUserIds(newIds)
+                                setRegParticipantStreams(newStreams)
+                              }}
+                              className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white/80 outline-none mb-2 focus:border-neon-cyan/50"
+                              value={regParticipantUserIds[idx] || 'manual'}
+                            >
+                              <option value="manual">✍️ Manual (Escribir nombre)</option>
+                              {userFriends.map(f => (
+                                <option key={f.id} value={f.id}>
+                                  👤 {f.username || 'Sin Nickname'}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
                         <input
                           required
                           type="text"
@@ -1932,9 +2010,19 @@ export function LeaderboardClient({
                             newParticipants[idx] = e.target.value
                             setRegParticipants(newParticipants)
                           }}
+                          readOnly={idx > 0 && regParticipantUserIds[idx] !== null}
                           placeholder={idx === 0 ? "Tu display name / GamerTag" : `Display Name Integrante ${idx + 1}`}
-                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 transition-all"
+                          className={`w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 transition-all ${
+                            idx > 0 && regParticipantUserIds[idx] !== null ? 'opacity-60 cursor-not-allowed bg-white/5' : ''
+                          }`}
                         />
+
+                        {idx > 0 && regParticipantUserIds[idx] !== null && (
+                          <div className="flex items-center gap-1.5 ml-1 mt-1 text-[9px] text-neon-cyan/80">
+                            <span>✓</span>
+                            <span>Amigo vinculado (las estadísticas irán a su perfil)</span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

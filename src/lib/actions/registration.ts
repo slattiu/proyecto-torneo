@@ -8,7 +8,7 @@ export async function registerTournament(
   formData: {
     teamName: string
     streamUrl?: string
-    participants: { displayName: string; contactId?: string; streamUrl?: string }[]
+    participants: { displayName: string; contactId?: string; streamUrl?: string; userId?: string }[]
     password?: string
   }
 ): Promise<{ success: boolean } | { error: string }> {
@@ -137,7 +137,7 @@ export async function registerTournament(
           contact_id: pData.contactId || null,
           stream_url: pData.streamUrl || null,
           is_captain: isCaptain,
-          user_id: isCaptain ? user.id : null // Asignamos el user_id de la sesión al capitán
+          user_id: isCaptain ? user.id : (pData.userId || null) // Asignamos el user_id del amigo si está disponible
         })
         .select()
         .single()
