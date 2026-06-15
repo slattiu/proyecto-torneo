@@ -1,7 +1,9 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts'
+import { updateProfile } from '@/lib/actions/profile'
+import { toast } from 'sonner'
 
 interface ProfileStatsClientProps {
   profile: any
@@ -10,7 +12,7 @@ interface ProfileStatsClientProps {
   badges: any[]
   rankings: any[]
   pointsHistory: any[]
-  updateProfileForm: React.ReactNode
+  updateProfileForm?: React.ReactNode
   subscriptionCard: React.ReactNode
 }
 
@@ -37,6 +39,31 @@ export function ProfileStatsClient({
   subscriptionCard,
 }: ProfileStatsClientProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'badges' | 'stats'>('profile')
+  const [username, setUsername] = useState(profile?.username ?? '')
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!username || username.trim().length < 2) {
+      toast.error('Mínimo 2 caracteres')
+      return
+    }
+    setIsSaving(true)
+    try {
+      const formData = new FormData()
+      formData.append('username', username.trim())
+      const res = await updateProfile(formData)
+      if (res && 'error' in res) {
+        toast.error(res.error)
+      } else {
+        toast.success('Perfil actualizado correctamente')
+      }
+    } catch (err: any) {
+      toast.error('Error al actualizar perfil: ' + err.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const roleLabel = {
     ADMIN: { label: 'Administrador', color: 'text-neon-cyan border-neon-cyan/30 bg-neon-cyan/10' },
@@ -272,7 +299,35 @@ export function ProfileStatsClient({
       <div className="space-y-6">
         {activeTab === 'profile' && (
           <>
-            {updateProfileForm}
+            <div className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-6 space-y-4">
+              <h2 className="text-white font-orbitron font-bold text-sm uppercase tracking-wider mb-2">Editar perfil</h2>
+              <form onSubmit={handleUpdateProfile} className="space-y-4">
+                <div>
+                  <label htmlFor="username" className="block text-xs text-white/50 uppercase tracking-widest font-bold mb-1.5">
+                    Username / Nickname
+                  </label>
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Tu nombre de usuario"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 transition-colors"
+                  />
+                  <p className="text-[10px] text-white/40 mt-2">
+                    Solo se permiten letras, números y guiones bajos (sin espacios). Mínimo 2, máximo 30 caracteres.
+                  </p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-5 py-2.5 bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan text-xs uppercase font-bold tracking-widest rounded-xl hover:bg-neon-cyan/20 transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </form>
+            </div>
             {subscriptionCard}
           </>
         )}

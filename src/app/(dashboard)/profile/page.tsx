@@ -63,34 +63,6 @@ export default async function ProfilePage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: true })
 
-  // Render components for forms
-  const updateProfileForm = (
-    <div className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-6 space-y-4">
-      <h2 className="text-white font-orbitron font-bold text-sm uppercase tracking-wider mb-2">Editar perfil</h2>
-      <form action={updateProfile} className="space-y-4">
-        <div>
-          <label htmlFor="username" className="block text-xs text-white/50 uppercase tracking-widest font-bold mb-1.5">
-            Username / Nickname
-          </label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            defaultValue={profile?.username ?? ''}
-            placeholder="Tu nombre de usuario"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 transition-colors"
-          />
-        </div>
-        <button
-          type="submit"
-          className="px-5 py-2.5 bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan text-xs uppercase font-bold tracking-widest rounded-xl hover:bg-neon-cyan/20 transition-colors"
-        >
-          Guardar cambios
-        </button>
-      </form>
-    </div>
-  )
-
   const subscriptionCard = (
     profile?.role !== 'ADMIN' && (
       <div className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-6 space-y-4">
@@ -156,7 +128,7 @@ export default async function ProfilePage() {
         badges={badges || []}
         rankings={rankings || []}
         pointsHistory={pointsHistory || []}
-        updateProfileForm={updateProfileForm}
+        updateProfileForm={null}
         subscriptionCard={subscriptionCard}
       />
     </div>
