@@ -26,7 +26,7 @@ export async function GET(request: Request) {
         await adminSupabase.from('profiles').insert({
           id: data.user.id,
           username: null,
-          role: (count ?? 0) === 0 ? 'ADMIN' : 'STREAMER',
+          role: (count ?? 0) === 0 ? 'ADMIN' : 'USER',
         })
       }
     }
