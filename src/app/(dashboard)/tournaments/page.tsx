@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { getTournaments } from '@/lib/actions/tournaments'
 import { TournamentCard } from './TournamentCard'
+import { getProfile } from '@/lib/actions/auth-helpers'
+import { redirect } from 'next/navigation'
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
@@ -31,6 +33,11 @@ function EmptyState() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function TournamentsPage() {
+  const profile = await getProfile()
+  if (profile?.role === 'USER') {
+    redirect('/profile')
+  }
+
   const result = await getTournaments()
   const tournaments = 'data' in result ? result.data : []
 

@@ -1,6 +1,7 @@
 import { getProfile } from '@/lib/actions/auth-helpers'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import { redirect } from 'next/navigation'
 
 const TournamentForm = dynamic(
   () => import('@/components/dashboard/TournamentForm').then((mod) => mod.TournamentForm),
@@ -27,7 +28,11 @@ const TournamentForm = dynamic(
 
 export default async function NewTournamentPage() {
   const profile = await getProfile()
-  const canCreate = profile?.role === 'ADMIN' || profile?.subscriptionStatus === 'ACTIVE'
+  if (profile?.role === 'USER') {
+    redirect('/profile')
+  }
+
+  const canCreate = (profile?.role === 'ADMIN' || profile?.subscriptionStatus === 'ACTIVE') && profile?.role !== 'USER'
 
   return (
     <div className="p-8 max-w-3xl mx-auto">

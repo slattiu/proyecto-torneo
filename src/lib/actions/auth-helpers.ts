@@ -57,5 +57,6 @@ export async function isSuperAdmin() {
  */
 export async function isActiveStreamer() {
   const profile = await getProfile()
+  if (profile?.role === 'USER') return false
   return profile?.role === 'ADMIN' || profile?.role === 'FEDERATION' || profile?.subscriptionStatus === 'ACTIVE'
 }

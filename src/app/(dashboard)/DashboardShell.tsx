@@ -15,16 +15,18 @@ export default function DashboardShell({ children, userRole }: { children: React
 
   const NavLinks = () => (
     <nav className="flex-1 px-3 py-4 space-y-1">
-      <Link
-        href="/tournaments"
-        onClick={() => setDrawerOpen(false)}
-        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
-      >
-        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7h18M3 12h18M3 17h18" />
-        </svg>
-        Mis Torneos
-      </Link>
+      {userRole !== 'USER' && (
+        <Link
+          href="/tournaments"
+          onClick={() => setDrawerOpen(false)}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7h18M3 12h18M3 17h18" />
+          </svg>
+          Mis Torneos
+        </Link>
+      )}
 
       {userRole === 'ADMIN' && (
         <>
