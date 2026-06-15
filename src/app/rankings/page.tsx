@@ -15,8 +15,8 @@ export default async function RankingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   const profile = user ? await getProfile() : null
 
-  // Fetch all player rankings with their profiles
-  const { data: rankings } = await supabase
+  // 1. Fetch community rankings (Ranking Kronix)
+  const { data: communityRankings } = await supabase
     .from('user_discipline_rankings')
     .select(`
       id,
@@ -27,6 +27,12 @@ export default async function RankingsPage() {
         username
       )
     `)
+    .order('points', { ascending: false })
+
+  // 2. Fetch national rankings (Ranking Nacional FDDE)
+  const { data: nationalRankings } = await supabase
+    .from('player_national_stats')
+    .select('*')
     .order('points', { ascending: false })
 
   return (
@@ -41,11 +47,14 @@ export default async function RankingsPage() {
             Rankings de la Plataforma
           </h1>
           <p className="text-white/40 text-xs sm:text-sm max-w-xl mt-1.5 leading-relaxed">
-            Explora las clasificaciones de los mejores jugadores de Kronix. Haz clic en cualquier competidor para analizar su rendimiento, gráficos e insignias.
+            Explora y compara los rankings oficiales. Alterna entre el Ranking Kronix de la comunidad y el Ranking Nacional para atletas federados de la FDDE.
           </p>
         </div>
 
-        <RankingsClient initialRankings={rankings || []} />
+        <RankingsClient 
+          communityRankings={communityRankings || []} 
+          nationalRankings={nationalRankings || []} 
+        />
       </main>
     </div>
   )
