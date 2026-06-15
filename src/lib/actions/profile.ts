@@ -79,6 +79,36 @@ export async function updateProfile(formData: FormData) {
 
   if (error) return { error: error.message }
 
+  // Sincronizar el cambio de nombre en las inscripciones de torneos existentes
+  if (newUsername && newUsername !== currentUsername) {
+    try {
+      // 1. Actualizar el display_name en la tabla de participantes
+      await adminSupabase
+        .from('participants')
+        .update({ display_name: newUsername })
+        .eq('user_id', user.id)
+
+      // 2. Si es torneo individual y el nombre del equipo era su antiguo username, actualizarlo también
+      if (currentUsername) {
+        const { data: userParts } = await adminSupabase
+          .from('participants')
+          .select('team_id')
+          .eq('user_id', user.id)
+
+        if (userParts && userParts.length > 0) {
+          const teamIds = userParts.map(p => p.team_id).filter(Boolean)
+          await adminSupabase
+            .from('teams')
+            .update({ name: newUsername })
+            .in('id', teamIds)
+            .eq('name', currentUsername)
+        }
+      }
+    } catch (syncErr) {
+      console.error('Error al sincronizar el cambio de nombre en los torneos:', syncErr)
+    }
+  }
+
   revalidatePath('/profile')
   return { success: true }
 }

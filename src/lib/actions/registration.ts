@@ -63,6 +63,26 @@ export async function registerTournament(
       return { error: 'Ya estás inscrito en este torneo.' }
     }
 
+    // Verificar si alguno de los compañeros seleccionados ya está inscrito en este torneo
+    const userIdsToCheck = pList
+      .map(p => p.userId)
+      .filter((id): id is string => !!id)
+
+    if (userIdsToCheck.length > 0) {
+      const { data: existingTeammates } = await supabase
+        .from('participants')
+        .select('user_id, display_name')
+        .eq('tournament_id', tournamentId)
+        .in('user_id', userIdsToCheck)
+
+      if (existingTeammates && existingTeammates.length > 0) {
+        const alreadyReg = existingTeammates[0]
+        const inputMember = pList.find(p => p.userId === alreadyReg.user_id)
+        const nameToShow = inputMember?.displayName || alreadyReg.display_name
+        return { error: `El jugador '${nameToShow}' ya está inscrito en este torneo en otro equipo.` }
+      }
+    }
+
     // 3. Validar el tamaño del equipo según el modo del torneo
     const maxPerTeam = { individual: 1, duos: 2, trios: 3, cuartetos: 4, quintas: 5 }[tournament.mode] || 1
     const pList = formData.participants.filter(p => p.displayName.trim() !== '')
