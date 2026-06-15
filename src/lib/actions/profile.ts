@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
@@ -19,7 +19,8 @@ export async function updateProfile(formData: FormData) {
   })
   if (!parsed.success) return { error: parsed.error.errors[0].message }
 
-  const { error } = await supabase
+  const adminSupabase = await createAdminClient()
+  const { error } = await adminSupabase
     .from('profiles')
     .upsert({ 
       id: user.id, 
