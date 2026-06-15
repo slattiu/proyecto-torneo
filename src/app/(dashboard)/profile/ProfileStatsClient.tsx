@@ -28,6 +28,41 @@ const GAME_NAMES: Record<string, string> = {
   valorant: 'Valorant 🎯',
 }
 
+function TournamentCountdown({ startDate }: { startDate: string }) {
+  const [timeLeft, setTimeLeft] = useState('')
+
+  useEffect(() => {
+    const target = new Date(startDate).getTime()
+
+    const updateTimer = () => {
+      const now = new Date().getTime()
+      const diff = target - now
+
+      if (diff <= 0) {
+        setTimeLeft('¡Ha comenzado!')
+        return
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+
+      setTimeLeft(`Comienza en: ${days}d ${hours}h ${minutes}m ${seconds}s`)
+    }
+
+    updateTimer()
+    const interval = setInterval(updateTimer, 1000)
+    return () => clearInterval(interval)
+  }, [startDate])
+
+  return (
+    <span className="text-[9px] bg-neon-cyan/15 text-neon-cyan px-2.5 py-1 rounded-full font-black uppercase tracking-wider block mt-1.5 w-max">
+      {timeLeft}
+    </span>
+  )
+}
+
 export function ProfileStatsClient({
   profile,
   user,
@@ -38,7 +73,12 @@ export function ProfileStatsClient({
   updateProfileForm,
   subscriptionCard,
 }: ProfileStatsClientProps) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'badges' | 'stats'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'badges' | 'stats'>(
+    participations.some(p => {
+      const tourney = p.tournaments
+      return tourney && (tourney.status === 'pending' || new Date(tourney.start_date) > new Date())
+    }) ? 'history' : 'profile'
+  )
   const [username, setUsername] = useState(profile?.username ?? '')
   const [isSaving, setIsSaving] = useState(false)
 
@@ -408,19 +448,27 @@ export function ProfileStatsClient({
                     {participations.map((p) => {
                       const standing = p.teams?.team_standings?.[0] || p.teams?.team_standings
                       const rank = standing?.rank
+                      const isUpcoming = p.tournaments?.status === 'pending' || (p.tournaments?.start_date && new Date(p.tournaments.start_date) > new Date())
                       return (
                         <tr key={p.id} className="hover:bg-white/[0.01] transition-colors">
                           <td className="py-3.5 font-bold text-white">
-                            <a href={`/t/${p.tournaments?.slug}`} className="hover:text-neon-cyan transition-colors">
-                              {p.tournaments?.name}
-                            </a>
+                            <div className="flex flex-col">
+                              <a href={`/t/${p.tournaments?.slug}`} className="hover:text-neon-cyan transition-colors">
+                                {p.tournaments?.name}
+                              </a>
+                              {isUpcoming && p.tournaments?.start_date && (
+                                <TournamentCountdown startDate={p.tournaments.start_date} />
+                              )}
+                            </div>
                           </td>
                           <td className="py-3.5 text-white/50 text-xs">
                             {GAME_NAMES[p.tournaments?.discipline] || p.tournaments?.discipline}
                           </td>
                           <td className="py-3.5 text-white/70 font-semibold">{p.teams?.name}</td>
                           <td className="py-3.5 text-right font-orbitron font-black">
-                            {rank ? (
+                            {isUpcoming ? (
+                              <span className="text-neon-cyan/50 text-[10px] uppercase font-bold tracking-widest">Inscrito</span>
+                            ) : rank ? (
                               <span className={rank === 1 ? 'text-gold' : rank === 2 ? 'text-white/90' : rank === 3 ? 'text-orange-400' : 'text-white/40'}>
                                 #{rank} {rank === 1 ? '🏆' : ''}
                               </span>

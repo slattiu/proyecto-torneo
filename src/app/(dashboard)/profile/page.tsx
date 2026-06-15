@@ -28,7 +28,8 @@ export default async function ProfilePage() {
         name,
         slug,
         discipline,
-        start_date
+        start_date,
+        status
       ),
       teams (
         id,
