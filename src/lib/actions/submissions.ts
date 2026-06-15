@@ -146,7 +146,9 @@ export async function recalculateStandings(supabase: any, tournamentId: string) 
       const { syncClashRoyaleTournamentData } = await import('@/lib/services/clash-royale')
       await syncClashRoyaleTournamentData(supabase, tournamentId, tourney.clash_royale_tag)
       // Call sync live viewers before early return to make sure viewer counts updates
-      await syncTournamentViewers(supabase, tournamentId)
+      syncTournamentViewers(supabase, tournamentId).catch(err => {
+        console.error('[STANDINGS] Background viewers sync failed:', err)
+      })
       return
     } catch (err) {
       console.error(`[STANDINGS] Failed to sync Clash Royale stats:`, err)
@@ -260,8 +262,10 @@ export async function recalculateStandings(supabase: any, tournamentId: string) 
     if (pErr) console.error(`[STANDINGS] Participant KILLS Update ERROR:`, pErr)
   }
 
-  // Auto-sync streamer live viewers
-  await syncTournamentViewers(supabase, tournamentId)
+  // Auto-sync streamer live viewers in the background
+  syncTournamentViewers(supabase, tournamentId).catch(err => {
+    console.error('[STANDINGS] Background viewers sync failed:', err)
+  })
 }
 
 

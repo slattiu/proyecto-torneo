@@ -29,8 +29,11 @@ export default async function PublicLeaderboardPage({
 
   if (tErr || !tourneyInit) notFound()
 
-  // AUTO-SYNC: Recalculate standings on every page load to ensure data is always fresh
-  await recalculateStandings(adminSupabase, tourneyInit.id)
+  // AUTO-SYNC: Recalculate standings in the background to ensure instant page load
+  // Realtime updates will push changes to the UI once sync completes
+  recalculateStandings(adminSupabase, tourneyInit.id).catch(err => {
+    console.error("Error in background standings recalculation:", err)
+  })
 
   // Fetch the full tournament details (reflecting any automatic status updates from the sync)
   const { data: tournament } = await supabase
