@@ -63,6 +63,9 @@ export async function registerTournament(
       return { error: 'Ya estás inscrito en este torneo.' }
     }
 
+    const maxPerTeam = { individual: 1, duos: 2, trios: 3, cuartetos: 4, quintas: 5 }[tournament.mode] || 1
+    const pList = formData.participants.filter(p => p.displayName.trim() !== '')
+
     // Verificar si alguno de los compañeros seleccionados ya está inscrito en este torneo
     const userIdsToCheck = pList
       .map(p => p.userId)
@@ -84,9 +87,6 @@ export async function registerTournament(
     }
 
     // 3. Validar el tamaño del equipo según el modo del torneo
-    const maxPerTeam = { individual: 1, duos: 2, trios: 3, cuartetos: 4, quintas: 5 }[tournament.mode] || 1
-    const pList = formData.participants.filter(p => p.displayName.trim() !== '')
-
     if (tournament.mode === 'individual') {
       if (pList.length === 0) {
         return { error: 'El nombre del jugador es requerido.' }
