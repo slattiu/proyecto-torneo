@@ -130,7 +130,7 @@ export async function createSubmission(
 export async function recalculateStandings(supabase: any, tournamentId: string) {
   // Fetch tournament + rule
   const { data: tourney } = await supabase.from('tournaments')
-    .select('id, total_matches, format, is_sanctioned, mode, tournament_type, clash_royale_tag, scoring_rules(kill_points, placement_points)')
+    .select('id, slug, total_matches, format, is_sanctioned, mode, tournament_type, clash_royale_tag, max_points_limit, scoring_rules(kill_points, placement_points, use_multiplier)')
     .eq('id', tournamentId).single()
   
   console.log(`[STANDINGS] Recalculating for Tournament: ${tournamentId}`)
@@ -235,6 +235,36 @@ export async function recalculateStandings(supabase: any, tournamentId: string) 
   const { error: upsertErr } = await supabase.from('team_standings').upsert(standingRows, { onConflict: 'tournament_id,team_id' })
   if (upsertErr) {
     console.error(`[STANDINGS] Upsert ERROR:`, upsertErr)
+  }
+
+  // Check if any team reached the max points limit to auto-finish the tournament
+  if (tourney?.max_points_limit && standingRows.length > 0) {
+    const limit = Number(tourney.max_points_limit)
+    const reachedLimit = standingRows.some((s: any) => Number(s.total_points) >= limit)
+    if (reachedLimit) {
+      console.log(`[STANDINGS] A team reached the Max Points Limit of ${limit}! Auto-finishing tournament...`)
+      await supabase
+        .from('tournaments')
+        .update({ status: 'finished' })
+        .eq('id', tournamentId)
+      
+      const { revalidatePath } = await import('next/cache')
+      revalidatePath(`/tournaments/${tournamentId}`)
+      revalidatePath(`/t/${tourney.slug}`)
+      revalidatePath('/tournaments')
+      revalidatePath('/')
+      
+      const { pushToAC } = await import('./ac-push')
+      const { data: updatedTourney } = await supabase.from('tournaments').select('*').eq('id', tournamentId).single()
+      if (updatedTourney) {
+        const { mapTournamentRow } = await import('./tournaments')
+        pushToAC(
+          'tournaments',
+          'upsert',
+          mapTournamentRow(updatedTourney as Record<string, unknown>) as unknown as Record<string, unknown>
+        )
+      }
+    }
   }
 
   // ─── NEW: Update Individual Participant Kills ─────────────────────────────

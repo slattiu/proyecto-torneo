@@ -43,6 +43,7 @@ const tournamentBaseSchema = z.object({
   clashRoyaleTag: z.string().optional().nullable(),
   discipline: z.string().default('warzone'),
   badgeUrl: z.string().url().optional().or(z.literal('')).or(z.null()),
+  maxPointsLimit: z.number().int().min(1).optional().nullable(),
   
   // Finance Model
   entryFee: z.number().min(0).default(0),

@@ -69,6 +69,7 @@ export interface Tournament {
   clashRoyaleTag?: string | null;
   discipline: string;
   badgeUrl?: string | null;
+  maxPointsLimit?: number | null;
 }
 
 export interface ScoringRule {

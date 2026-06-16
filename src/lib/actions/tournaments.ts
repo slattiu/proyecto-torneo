@@ -72,6 +72,7 @@ function mapTournamentRow(row: Record<string, unknown>): Tournament {
     clashRoyaleTag: row.clash_royale_tag as string | undefined | null,
     discipline: (row.discipline as string) || 'warzone',
     badgeUrl: row.badge_url as string | undefined | null,
+    maxPointsLimit: row.max_points_limit !== undefined && row.max_points_limit !== null ? Number(row.max_points_limit) : null,
   }
 }
 
@@ -142,6 +143,7 @@ export async function createTournament(
       clash_royale_tag: input.clashRoyaleTag || null,
       discipline: input.discipline || 'warzone',
       badge_url: input.badgeUrl || null,
+      max_points_limit: input.maxPointsLimit || null,
       // Finance Model
       entry_fee: input.entryFee || 0,
       prize_1st: input.prize1st || 0,
@@ -294,6 +296,9 @@ export async function updateTournament(
     updatePayload.registration_start_date = input.registrationStartDate || null
   if (input.registrationEndDate !== undefined)
     updatePayload.registration_end_date = input.registrationEndDate || null
+  if (input.maxPointsLimit !== undefined)
+    updatePayload.max_points_limit = input.maxPointsLimit || null
+
 
   
   // Finance Model
@@ -1006,4 +1011,99 @@ export async function toggleTournamentPrivacy(
   revalidatePath('/')
   return { success: true }
 }
+
+export async function addDynamicMatch(
+  tournamentId: string
+): Promise<{ success: true } | { error: string }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // Verify ownership and fetch details
+  const { data: tournament, error: fetchErr } = await supabase
+    .from('tournaments')
+    .select('creator_id, total_matches, default_rounds_per_match, status')
+    .eq('id', tournamentId)
+    .single()
+
+  if (fetchErr || !tournament) return { error: 'Torneo no encontrado' }
+
+  const admin = await isAdmin()
+  if (!admin && tournament.creator_id !== user.id) return { error: 'Sin permisos' }
+  if (tournament.status !== 'active') return { error: 'El torneo debe estar activo para agregar partidas' }
+
+  const nextMatchNumber = (tournament.total_matches || 0) + 1
+
+  // 1. Increment total_matches on tournaments
+  const { error: updateErr } = await supabase
+    .from('tournaments')
+    .update({ total_matches: nextMatchNumber })
+    .eq('id', tournamentId)
+
+  if (updateErr) return { error: updateErr.message }
+
+  // 2. Create Parent Match (Encounter)
+  const { data: parentMatch, error: pmErr } = await supabase
+    .from('matches')
+    .insert({
+      tournament_id: tournamentId,
+      match_number: nextMatchNumber,
+      name: `Encuentro ${nextMatchNumber}`,
+    })
+    .select()
+    .single()
+
+  if (pmErr || !parentMatch) {
+    // Rollback total_matches
+    await supabase.from('tournaments').update({ total_matches: tournament.total_matches }).eq('id', tournamentId)
+    return { error: pmErr?.message ?? 'Error al crear la partida' }
+  }
+
+  // 3. Create Rounds (Child Matches) if default_rounds_per_match > 1
+  if ((tournament.default_rounds_per_match || 1) > 1) {
+    const rounds = Array.from({ length: tournament.default_rounds_per_match }, (_, rIdx) => ({
+      tournament_id: tournamentId,
+      parent_match_id: parentMatch.id,
+      match_number: nextMatchNumber,
+      round_number: rIdx + 1,
+      name: `Ronda ${rIdx + 1}`,
+    }))
+
+    const { error: rErr } = await supabase.from('matches').insert(rounds)
+    if (rErr) {
+      // Clean up parent match and rollback
+      await supabase.from('matches').delete().eq('id', parentMatch.id)
+      await supabase.from('tournaments').update({ total_matches: tournament.total_matches }).eq('id', tournamentId)
+      return { error: rErr.message }
+    }
+  }
+
+  // 4. Mirror updates to ArenaCrypto
+  const { data: updatedTourney } = await supabase.from('tournaments').select('*').eq('id', tournamentId).single()
+  if (updatedTourney) {
+    pushToAC(
+      'tournaments',
+      'upsert',
+      mapTournamentRow(updatedTourney as Record<string, unknown>) as unknown as Record<string, unknown>
+    )
+  }
+
+  pushToAC('matches', 'upsert', parentMatch)
+
+  const { data: createdRounds } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('parent_match_id', parentMatch.id)
+  for (const r of createdRounds ?? []) {
+    pushToAC('matches', 'upsert', r)
+  }
+
+  revalidatePath(`/tournaments/${tournamentId}`)
+  revalidatePath(`/t/${updatedTourney?.slug}`)
+  revalidatePath('/tournaments')
+  return { success: true }
+}
+
 

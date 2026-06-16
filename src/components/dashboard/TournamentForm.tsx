@@ -124,6 +124,7 @@ export function TournamentForm({ onSuccess, initialData, tournamentId }: Tournam
     killRaceTimeLimitMinutes: initialData?.killRaceTimeLimitMinutes ?? 30,
     defaultRoundsPerMatch: initialData?.defaultRoundsPerMatch ?? 1,
     totalMatches: initialData?.totalMatches ?? 3,
+    maxPointsLimit: initialData?.maxPointsLimit ?? null,
     entryFee: initialData?.entryFee ?? 40,
     prize1st: initialData?.prize1st ?? 500,
     prize2nd: initialData?.prize2nd ?? 300,
@@ -563,6 +564,29 @@ export function TournamentForm({ onSuccess, initialData, tournamentId }: Tournam
                     transition-all duration-150"
                 />
                 {err(errors.totalMatches?.message)}
+              </div>
+            )}
+
+            {/* Límite de Puntos (Max Points) */}
+            {(!discipline || !['clash_royale', 'street_fighter_6', 'super_smash_bros_ultimate', 'league_of_legends', 'valorant'].includes(discipline)) && (
+              <div>
+                <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-2">
+                  Límite de Puntos (Max Points)
+                  <span className="ml-2 text-white/30 normal-case font-normal">(Dejar vacío para no usar límite)</span>
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  {...register('maxPointsLimit', { 
+                    valueAsNumber: true,
+                    setValueAs: (v) => v === '' || isNaN(v) ? null : v
+                  })}
+                  placeholder="Ej. 150"
+                  className="w-48 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm
+                    focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/20 focus:outline-none
+                    transition-all duration-150"
+                />
+                {errors.maxPointsLimit && <p className="text-red-400 text-xs mt-1">{errors.maxPointsLimit.message}</p>}
               </div>
             )}
 

@@ -114,6 +114,7 @@ import { FinishTournamentButton } from './FinishTournamentButton'
 import { PublishTournamentButton } from './PublishTournamentButton'
 import { TournamentBranding } from './TournamentBranding'
 import { VisibilityToggle } from './VisibilityToggle'
+import { AddMatchButton } from './AddMatchButton'
 
 
 // ─── Export & Reports Component (Client Wrap) ──────────────────────────────────
@@ -333,14 +334,23 @@ export default async function TournamentOverviewPage({
         </div>
       </div>
 
-      {/* Active action (Finish) */}
+      {/* Active action (Add Dynamic Match & Finish) */}
       {tournament.status === 'active' && (
-        <div className="bg-dark-card border border-gold/10 rounded-2xl p-6 mb-8">
-          <h2 className="text-sm font-semibold text-white mb-1">Finalizar Torneo</h2>
-          <p className="text-xs text-white/30 mb-4">
-            Al finalizar el torneo, se calculará el podio definitivo y se enviará a la Galería de Campeones.
-          </p>
-          <FinishTournamentButton id={id} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <div className="bg-dark-card border border-neon-cyan/10 rounded-2xl p-6">
+            <h2 className="text-sm font-semibold text-white mb-1">Partidas en Vivo</h2>
+            <p className="text-xs text-white/30 mb-4">
+              Crea la siguiente partida de forma dinámica durante el transcurso del torneo en vivo.
+            </p>
+            <AddMatchButton id={id} />
+          </div>
+          <div className="bg-dark-card border border-gold/10 rounded-2xl p-6">
+            <h2 className="text-sm font-semibold text-white mb-1">Finalizar Torneo</h2>
+            <p className="text-xs text-white/30 mb-4">
+              Al finalizar el torneo, se calculará el podio definitivo y se enviará a la Galería de Campeones.
+            </p>
+            <FinishTournamentButton id={id} />
+          </div>
         </div>
       )}
 
