@@ -8,6 +8,7 @@ export const placementPointsSchema = z.record(
 export const scoringRuleSchema = z.object({
   killPoints: z.number().min(0).max(100),
   placementPoints: placementPointsSchema,
+  useMultiplier: z.boolean().default(false),
 })
 
 const tournamentBaseSchema = z.object({

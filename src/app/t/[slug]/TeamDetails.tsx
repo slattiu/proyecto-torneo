@@ -116,13 +116,20 @@ export function TeamDetails({
       }
       
       // Points calculation
-      const killPoints = kills * (scoringRule?.killPoints || 0)
-      
-      // NEW: Use rank for placement points
       const pos = sub?.rank || (sub?.potTop ? 1 : 0)
-      const placementPoints = pos > 0 ? (scoringRule?.placementPoints?.[String(pos)] || 0) : 0
-      
-      const roundPoints = killPoints + placementPoints
+      let roundPoints = 0
+
+      if (scoringRule?.useMultiplier) {
+        const multiplier = pos > 0 && scoringRule.placementPoints[String(pos)] !== undefined
+          ? Number(scoringRule.placementPoints[String(pos)])
+          : 1
+        roundPoints = (kills * (scoringRule?.killPoints || 0)) * multiplier
+      } else {
+        const killPoints = kills * (scoringRule?.killPoints || 0)
+        const placementPoints = pos > 0 ? (scoringRule?.placementPoints?.[String(pos)] || 0) : 0
+        roundPoints = killPoints + placementPoints
+      }
+
 
       cumulativePoints += roundPoints
       cumulativeKills += kills

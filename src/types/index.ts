@@ -76,6 +76,7 @@ export interface ScoringRule {
   tournamentId: string;
   killPoints: number;
   placementPoints: Record<string, number>;
+  useMultiplier?: boolean;
 }
 
 export interface Team {

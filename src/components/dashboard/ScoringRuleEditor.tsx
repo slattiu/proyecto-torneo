@@ -1,20 +1,44 @@
 'use client'
 
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFormContext } from 'react-hook-form'
 import type { CreateTournamentInput } from '@/lib/validations/schemas'
 
 const PRESETS = {
   battle_royale: {
     label: 'Battle Royale estándar',
     points: { '1': 15, '2': 12, '3': 10, '4': 8, '5': 6, '6': 4, '7': 2, '8': 1 },
+    useMultiplier: false,
   },
   kill_race: {
     label: 'Kill Race',
     points: { '1': 0, '2': 0, '3': 0, '4': 0 },
+    useMultiplier: false,
+  },
+  wsow: {
+    label: 'WSOW Multipliers',
+    points: {
+      '1': 2.0,
+      '2': 1.5,
+      '3': 1.5,
+      '4': 1.5,
+      '5': 1.5,
+      '6': 1.25,
+      '7': 1.25,
+      '8': 1.25,
+      '9': 1.25,
+      '10': 1.25,
+      '11': 1.25,
+      '12': 1.25,
+      '13': 1.25,
+      '14': 1.25,
+      '15': 1.25
+    },
+    useMultiplier: true,
   },
   custom: {
     label: 'Custom',
     points: {},
+    useMultiplier: false,
   },
 } as const
 
@@ -25,6 +49,7 @@ export function ScoringRuleEditor() {
 
   const killPoints = watch('scoringRule.killPoints') ?? 1
   const placementPoints = watch('scoringRule.placementPoints') ?? {}
+  const useMultiplier = watch('scoringRule.useMultiplier') ?? false
 
   // Convert record to sorted array for display
   const rows = Object.entries(placementPoints as Record<string, number>)
@@ -33,13 +58,14 @@ export function ScoringRuleEditor() {
 
   function applyPreset(key: PresetKey) {
     setValue('scoringRule.placementPoints', PRESETS[key].points as Record<string, number>)
+    setValue('scoringRule.useMultiplier', PRESETS[key].useMultiplier)
   }
 
   function addRow() {
     const nextPos = rows.length > 0 ? Math.max(...rows.map((r) => r.pos)) + 1 : 1
     setValue('scoringRule.placementPoints', {
       ...placementPoints,
-      [String(nextPos)]: 0,
+      [String(nextPos)]: useMultiplier ? 1.0 : 0,
     })
   }
 
@@ -58,12 +84,61 @@ export function ScoringRuleEditor() {
 
   // Preview calculation
   const firstPos = rows[0]
-  const previewPlacementPts = firstPos ? Number(firstPos.pts) : 0
+  const previewPlacementValue = firstPos ? Number(firstPos.pts) : (useMultiplier ? 1.0 : 0)
   const previewKills = 5
-  const previewTotal = previewPlacementPts + killPoints * previewKills
+  const previewTotal = useMultiplier
+    ? (previewKills * killPoints) * previewPlacementValue
+    : previewPlacementValue + killPoints * previewKills
 
   return (
     <div className="space-y-5">
+      {/* Scoring Type Selection */}
+      <div>
+        <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-2">
+          Sistema de Puntuación
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setValue('scoringRule.useMultiplier', false)
+              // Reset values if they were floats
+              const resetPoints = { ...placementPoints }
+              Object.keys(resetPoints).forEach(key => {
+                resetPoints[key] = Math.round(resetPoints[key])
+              })
+              setValue('scoringRule.placementPoints', resetPoints)
+            }}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold border transition-all duration-150 ${
+              !useMultiplier
+                ? 'bg-neon-cyan/10 text-neon-cyan border-neon-cyan/30'
+                : 'bg-white/5 text-white/50 border-white/10 hover:text-white/80'
+            }`}
+          >
+            Suma de puntos (Estándar)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setValue('scoringRule.useMultiplier', true)
+              // Convert values to float format if 0
+              const resetPoints = { ...placementPoints }
+              Object.keys(resetPoints).forEach(key => {
+                if (resetPoints[key] === 0) resetPoints[key] = 1.0
+              })
+              setValue('scoringRule.placementPoints', resetPoints)
+            }}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold border transition-all duration-150 ${
+              useMultiplier
+                ? 'bg-neon-cyan/10 text-neon-cyan border-neon-cyan/30'
+                : 'bg-white/5 text-white/50 border-white/10 hover:text-white/80'
+            }`}
+          >
+            Multiplicador por puesto (Shooters / WSOW)
+          </button>
+        </div>
+      </div>
+
       {/* Kill Points */}
       <div>
         <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-2">
@@ -84,14 +159,14 @@ export function ScoringRuleEditor() {
         )}
       </div>
 
-      {/* Placement Points Table */}
+      {/* Placement Points/Multipliers Table */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <label className="text-xs font-medium text-white/50 uppercase tracking-wider">
-            Puntos por Posición
+            {useMultiplier ? 'Multiplicador por Posición' : 'Puntos por Posición'}
           </label>
           {/* Preset buttons */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {(Object.keys(PRESETS) as PresetKey[]).map((key) => (
               <button
                 key={key}
@@ -114,7 +189,7 @@ export function ScoringRuleEditor() {
                   Posición
                 </th>
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-white/40 uppercase tracking-wider">
-                  Puntos
+                  {useMultiplier ? 'Multiplicador (x)' : 'Puntos'}
                 </th>
                 <th className="w-10" />
               </tr>
@@ -143,9 +218,10 @@ export function ScoringRuleEditor() {
                     <input
                       type="number"
                       min={0}
+                      step={useMultiplier ? 0.01 : 1}
                       defaultValue={pts}
                       onBlur={(e) => updateRow(pos, pos, Number(e.target.value))}
-                      className="w-20 px-2 py-1 rounded bg-white/5 border border-white/10 text-white text-sm
+                      className="w-24 px-2 py-1 rounded bg-white/5 border border-white/10 text-white text-sm
                         focus:border-neon-cyan/50 focus:outline-none transition-all duration-150"
                     />
                   </td>
@@ -172,19 +248,22 @@ export function ScoringRuleEditor() {
             transition-colors duration-150"
         >
           <span className="text-base leading-none">+</span>
-          Agregar posición
+          {useMultiplier ? 'Agregar posición / multiplicador' : 'Agregar posición'}
         </button>
       </div>
 
       {/* Live preview */}
       {rows.length > 0 && (
         <div className="rounded-xl bg-neon-cyan/5 border border-neon-cyan/20 px-4 py-3">
-          <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Preview</p>
+          <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Previsualización de Puntos</p>
           <p className="text-sm text-white/80">
             1° lugar + {previewKills} kills ={' '}
-            <span className="text-neon-cyan font-semibold">{previewTotal} pts</span>
+            <span className="text-neon-cyan font-semibold">{previewTotal.toFixed(2).replace(/\.00$/, '')} pts</span>
             <span className="text-white/30 ml-2 text-xs">
-              ({previewPlacementPts} posición + {killPoints} × {previewKills} kills)
+              {useMultiplier
+                ? `(${previewKills} kills × ${killPoints} pts × ${previewPlacementValue}x multiplicador)`
+                : `(${previewPlacementValue} posición + ${killPoints} × ${previewKills} kills)`
+              }
             </span>
           </p>
         </div>

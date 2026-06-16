@@ -802,12 +802,21 @@ export function LeaderboardClient({
       .forEach(s => {
         const stats = calculatedStandingsMap.get(s.teamId)
         if (stats) {
-          const killPts = (s.killCount || 0) * (scoringRule?.killPoints || 0)
-          const placementPts = s.rank && scoringRule?.placementPoints 
-            ? (scoringRule.placementPoints[String(s.rank)] || 0)
-            : (s.potTop ? (scoringRule?.placementPoints?.[ '1'] || 0) : 0)
+          let matchPts = 0
+          if (scoringRule?.useMultiplier) {
+            const multiplier = s.rank && scoringRule.placementPoints[String(s.rank)] !== undefined
+              ? Number(scoringRule.placementPoints[String(s.rank)])
+              : 1
+            matchPts = ((s.killCount || 0) * (scoringRule?.killPoints || 0)) * multiplier
+          } else {
+            const killPts = (s.killCount || 0) * (scoringRule?.killPoints || 0)
+            const placementPts = s.rank && scoringRule?.placementPoints 
+              ? (scoringRule.placementPoints[String(s.rank)] || 0)
+              : (s.potTop ? (scoringRule?.placementPoints?.[ '1'] || 0) : 0)
+            matchPts = killPts + placementPts
+          }
           
-          stats.totalPoints += (killPts + placementPts)
+          stats.totalPoints += matchPts
           stats.totalKills += (s.killCount || 0)
           stats.submissionsCount += 1
           if (s.potTop || s.rank === 1) stats.potTopCount += 1

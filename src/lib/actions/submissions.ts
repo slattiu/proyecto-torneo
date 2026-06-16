@@ -161,6 +161,7 @@ export async function recalculateStandings(supabase: any, tournamentId: string) 
     tournamentId: tourney.id,
     killPoints: Number(sRules?.kill_points ?? 1),
     placementPoints: sRules?.placement_points ?? {},
+    useMultiplier: !!sRules?.use_multiplier,
   }
 
   // Fetch all teams

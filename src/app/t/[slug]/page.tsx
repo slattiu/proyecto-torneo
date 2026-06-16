@@ -185,7 +185,8 @@ export default async function PublicLeaderboardPage({
     id: rawScoringRule.id,
     tournamentId: rawScoringRule.tournament_id,
     killPoints: rawScoringRule.kill_points,
-    placementPoints: rawScoringRule.placement_points
+    placementPoints: rawScoringRule.placement_points,
+    useMultiplier: !!rawScoringRule.use_multiplier,
   } : undefined
 
   // Flatten and map participants for LeaderboardClient

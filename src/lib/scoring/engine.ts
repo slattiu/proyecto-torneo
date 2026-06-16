@@ -30,6 +30,12 @@ export function calculateMatchPoints(
   position: number,
   kills: number
 ): number {
+  if (rule.useMultiplier) {
+    const multiplier = rule.placementPoints[String(position)] !== undefined
+      ? Number(rule.placementPoints[String(position)])
+      : 1
+    return (kills * rule.killPoints) * multiplier
+  }
   const placement = rule.placementPoints[String(position)] ?? 0
   return placement + rule.killPoints * kills
 }
@@ -118,25 +124,27 @@ export function computeStandings(
     const subs = byTeam.get(team.id) ?? []
     const totalKills = subs.reduce((sum, s) => sum + s.killCount, 0)
     
-    // Sum placement points for each approved submission
-    const totalPlacementPoints = subs.reduce((sum, s) => {
-      const pos = s.rank || (s.potTop ? 1 : 0)
-      
-      // Handle potential string/object issues with placementPoints
-      const pRules = (rule.placementPoints as any) || {}
-      const points = pos > 0 ? (Number(pRules[String(pos)]) || 0) : 0
-      
-      if (points > 0) {
-        console.log(`[ENGINE] Team ${team.name} Match: Pos ${pos} -> +${points} pts`)
-      }
-      
-      return sum + points
-    }, 0)
+    let totalPointsWithoutVip = 0
+    let totalPlacementPoints = 0
+
+    if (rule.useMultiplier) {
+      totalPointsWithoutVip = subs.reduce((sum, s) => {
+        const pos = s.rank || (s.potTop ? 1 : 0)
+        return sum + calculateMatchPoints(rule, pos, s.killCount)
+      }, 0)
+    } else {
+      totalPlacementPoints = subs.reduce((sum, s) => {
+        const pos = s.rank || (s.potTop ? 1 : 0)
+        const pRules = (rule.placementPoints as any) || {}
+        const points = pos > 0 ? (Number(pRules[String(pos)]) || 0) : 0
+        return sum + points
+      }, 0)
+      totalPointsWithoutVip = (totalKills * rule.killPoints) + totalPlacementPoints
+    }
 
     const potTopCount = calculatePotTopCount(subs)
     const killRate = calculateKillRate(totalKills, subs.length)
-    const killPoints = totalKills * rule.killPoints
-    const totalPoints = calculateTotalWithVip(killPoints + totalPlacementPoints, team.vipScore)
+    const totalPoints = calculateTotalWithVip(totalPointsWithoutVip, team.vipScore)
 
     if (totalPlacementPoints > 0) {
       console.log(`[ENGINE] Team ${team.name} Total Placement Pts: ${totalPlacementPoints}`)

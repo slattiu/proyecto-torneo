@@ -81,6 +81,7 @@ function mapScoringRuleRow(row: Record<string, unknown>): ScoringRule {
     tournamentId: row.tournament_id as string,
     killPoints: Number(row.kill_points),
     placementPoints: row.placement_points as Record<string, number>,
+    useMultiplier: !!row.use_multiplier,
   }
 }
 
@@ -165,6 +166,7 @@ export async function createTournament(
     tournament_id: tournament.id,
     kill_points: input.scoringRule.killPoints,
     placement_points: input.scoringRule.placementPoints,
+    use_multiplier: input.scoringRule.useMultiplier || false,
   })
 
   if (srErr) {
@@ -324,6 +326,7 @@ export async function updateTournament(
       .update({
         kill_points: input.scoringRule.killPoints,
         placement_points: input.scoringRule.placementPoints,
+        use_multiplier: input.scoringRule.useMultiplier || false,
       })
       .eq('tournament_id', id)
   }

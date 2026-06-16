@@ -241,4 +241,28 @@ describe('Scoring Engine — Property-Based Tests', () => {
       { numRuns: 100 }
     )
   })
+
+  it('Feature: tournament-leaderboard-platform, calculateMatchPoints works correctly with multipliers', () => {
+    const multiplierRule: ScoringRule = {
+      id: 'rule-mult',
+      tournamentId: 't-1',
+      killPoints: 1.5,
+      placementPoints: {
+        '1': 2.0,
+        '2': 1.5,
+        '3': 1.25,
+      },
+      useMultiplier: true,
+    }
+
+    // 1st place with 10 kills -> 10 kills * 1.5 killPoints * 2.0 multiplier = 30 points
+    expect(calculateMatchPoints(multiplierRule, 1, 10)).toBe(30)
+
+    // 2nd place with 4 kills -> 4 * 1.5 * 1.5 = 9 points
+    expect(calculateMatchPoints(multiplierRule, 2, 4)).toBe(9)
+
+    // 4th place (unconfigured placement, defaults to 1.0x) with 6 kills -> 6 * 1.5 * 1.0 = 9 points
+    expect(calculateMatchPoints(multiplierRule, 4, 6)).toBe(9)
+  })
 })
+
