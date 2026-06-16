@@ -33,7 +33,7 @@ export function MembershipSection({ user, profile }: { user: any, profile: any }
         {!user ? (
           <>
             <h2 className={`${orbitron.className} text-2xl sm:text-4xl font-black uppercase mb-4 sm:mb-6`}>Únete a la <span className="text-neon-cyan">Élite</span></h2>
-            <p className="text-white/40 mb-8 sm:mb-10 text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">Inicia sesión para solicitar tu membresía de Streamer Pro y empezar a crear tus propios torneos con apuestas.</p>
+            <p className="text-white/40 mb-8 sm:mb-10 text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">Inicia sesión para solicitar tu membresía de Streamer Pro y empezar a organizar tus propios torneos profesionales.</p>
             <Link href="/login" className="w-full sm:w-auto inline-block text-center px-6 md:px-12 py-4 md:py-5 bg-neon-cyan text-black font-black text-xs md:text-sm uppercase tracking-widest rounded-2xl hover:bg-[#00D1DB] transition-all">
               Inicia Sesión
             </Link>
@@ -44,7 +44,7 @@ export function MembershipSection({ user, profile }: { user: any, profile: any }
                <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
             </div>
             <h2 className={`${orbitron.className} text-2xl sm:text-4xl font-black uppercase mb-4 sm:mb-6`}>Eres <span className="text-green-500">Streamer Pro</span></h2>
-            <p className="text-white/40 mb-8 sm:mb-10 text-sm sm:text-lg max-w-xl mx-auto leading-relaxed text-balance">Tienes acceso total para crear torneos ilimitados, gestionar premios y habilitar apuestas para tu comunidad.</p>
+            <p className="text-white/40 mb-8 sm:mb-10 text-sm sm:text-lg max-w-xl mx-auto leading-relaxed text-balance">Tienes acceso total para crear torneos ilimitados, gestionar premios y personalizar leaderboards para tu comunidad.</p>
             <Link href="/tournaments" className="w-full sm:w-auto inline-block text-center px-6 md:px-12 py-4 md:py-5 bg-white text-black font-black text-xs md:text-sm uppercase tracking-widest rounded-2xl hover:bg-neon-cyan transition-all">
               Ir al Dashboard
             </Link>
@@ -66,16 +66,21 @@ export function MembershipSection({ user, profile }: { user: any, profile: any }
             <ul className="text-left space-y-4 mb-10">
                <li className="flex items-center gap-3 text-white/60 text-sm">
                   <svg className="w-5 h-5 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Creación de torneos ilimitados
+                  Creación y gestión de torneos ilimitados
                </li>
                <li className="flex items-center gap-3 text-white/60 text-sm">
                   <svg className="w-5 h-5 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Habilitación de Apuestas en ArenaCrypto
+                  Leaderboard en vivo personalizado para tu comunidad
                </li>
                <li className="flex items-center gap-3 text-white/60 text-sm">
                   <svg className="w-5 h-5 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Soporte prioritario y validación por IA
+                  Exportación de estadísticas y reportes en CSV
                </li>
+               <li className="flex items-center gap-3 text-white/60 text-sm">
+                  <svg className="w-5 h-5 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  Soporte técnico prioritario 24/7
+               </li>
+
             </ul>
 
             <div className="bg-white/5 border border-white/5 p-6 rounded-2xl mb-8 text-left">
