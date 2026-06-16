@@ -9,6 +9,7 @@ import { Navbar } from '@/components/navigation/Navbar'
 import { HomeTracker } from '@/components/analytics/HomeTracker'
 import { getLandingSettings } from '@/lib/actions/landing-settings'
 import { getOptimizedImageUrl } from '@/lib/utils'
+import { WelcomeVideoModal } from '@/components/ui/WelcomeVideoModal'
 
 const orbitron = Orbitron({ subsets: ['latin'] })
 
@@ -86,6 +87,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-[#0a0a0b] text-white selection:bg-neon-cyan/30 relative overflow-x-hidden">
       <HomeTracker path="/" />
+      <WelcomeVideoModal />
       
       {/* Ambient Video or Image Background if enabled */}
       {settings.ambient_video_url && (
@@ -168,35 +170,6 @@ export default async function Home() {
              <Link href="/torneos" className="w-full sm:w-auto px-8 py-4 bg-transparent border border-neon-cyan/20 hover:border-neon-cyan/50 text-neon-cyan text-xs font-black uppercase tracking-widest rounded-xl hover:bg-neon-cyan/5 transition-all shadow-[0_0_15px_rgba(0,245,255,0.05)] hover:shadow-[0_0_25px_rgba(0,245,255,0.15)]">
                 Ver Torneos Públicos
              </Link>
-          </div>
-
-          {/* Welcome Video Container */}
-          <div className="mt-16 max-w-3xl mx-auto">
-            <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,245,255,0.1)] bg-[#0d0d0f] group">
-              {/* Header bar of the video player */}
-              <div className="flex items-center justify-between px-4 py-3 bg-[#121219] border-b border-white/5">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
-                </div>
-                <span className={`${orbitron.className} text-[9px] font-black uppercase tracking-widest text-white/60`}>
-                  Mensaje de Bienvenida
-                </span>
-                <div className="w-12" />
-              </div>
-              
-              {/* Video Element */}
-              <div className="aspect-video w-full bg-black relative">
-                <video 
-                  src="/bienvenida.mp4" 
-                  controls 
-                  preload="metadata"
-                  playsInline
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            </div>
           </div>
         </div>
       </section>
