@@ -947,3 +947,49 @@ export async function updateBettingStatus(
   revalidatePath(`/tournaments/${id}`)
   return { success: true }
 }
+
+export async function toggleTournamentPrivacy(
+  id: string,
+  isPrivate: boolean
+): Promise<{ success: true } | { error: string }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // Verify ownership
+  const { data: tournament, error: fetchErr } = await supabase
+    .from('tournaments')
+    .select('creator_id')
+    .eq('id', id)
+    .single()
+
+  if (fetchErr || !tournament) return { error: 'Torneo no encontrado' }
+
+  const admin = await isAdmin()
+  if (!admin && tournament.creator_id !== user.id) return { error: 'Sin permisos' }
+
+  const { error } = await supabase
+    .from('tournaments')
+    .update({ is_private: isPrivate })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+
+  // Push updated status to AC mirror
+  const { data: updated } = await supabase.from('tournaments').select('*').eq('id', id).single()
+  if (updated) {
+    pushToAC(
+      'tournaments',
+      'upsert',
+      mapTournamentRow(updated as Record<string, unknown>) as unknown as Record<string, unknown>
+    )
+  }
+
+  revalidatePath(`/tournaments/${id}`)
+  revalidatePath('/tournaments')
+  revalidatePath('/')
+  return { success: true }
+}
+

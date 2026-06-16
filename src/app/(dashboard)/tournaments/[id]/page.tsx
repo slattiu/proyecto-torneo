@@ -113,6 +113,7 @@ import { ActivateTournamentButton } from './ActivateTournamentButton'
 import { FinishTournamentButton } from './FinishTournamentButton'
 import { PublishTournamentButton } from './PublishTournamentButton'
 import { TournamentBranding } from './TournamentBranding'
+import { VisibilityToggle } from './VisibilityToggle'
 
 
 // ─── Export & Reports Component (Client Wrap) ──────────────────────────────────
@@ -160,10 +161,12 @@ export default async function TournamentOverviewPage({
         <div>
           <div className="flex items-center gap-3 mb-2">
             <StatusBadge status={tournament.status} />
+            <VisibilityToggle id={tournament.id} isPrivate={tournament.isPrivate || false} />
             <span className="text-xs text-white/30 border border-white/10 px-2.5 py-1 rounded-full">
               {FORMAT_LABELS[tournament.format]}
             </span>
           </div>
+
           <h1 className="font-orbitron text-2xl font-bold text-white tracking-wide">
             {tournament.name}
           </h1>
