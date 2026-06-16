@@ -47,7 +47,7 @@ export default async function Home() {
     const [adsRes, settingsRes, activeTournamentsRes, recentPublicTournamentsRes] = await Promise.all([
       getAdBanners().catch(err => ({ error: err.message })),
       getLandingSettings().catch(err => null),
-      adminSupabase.from('tournaments').select('total_live_viewers, status').neq('status', 'draft'),
+      adminSupabase.from('tournaments').select('total_live_viewers, status, is_private').neq('status', 'draft'),
       adminSupabase.from('tournaments')
         .select('*, teams(id)')
         .or('is_private.eq.false,is_private.is.null')
@@ -72,11 +72,13 @@ export default async function Home() {
     console.error('Error loading landing page data:', err)
   }
   
-  const activeCount = activeTournaments?.filter((t: any) => t.status === 'active' || t.status === 'pending').length || 0
-  const totalViewers = activeTournaments?.reduce((acc: number, curr: any) => acc + (curr.total_live_viewers || 0), 0) || 0
+  const publicActiveTournaments = activeTournaments?.filter((t: any) => !t.is_private) || []
+  const activeCount = publicActiveTournaments.filter((t: any) => t.status === 'active' || t.status === 'pending').length || 0
+  const totalViewers = publicActiveTournaments.reduce((acc: number, curr: any) => acc + (curr.total_live_viewers || 0), 0) || 0
   const dynamicLiveTickerText = activeCount > 0
     ? `● ${activeCount} Torneo${activeCount === 1 ? '' : 's'} Activo${activeCount === 1 ? '' : 's'} ahora · 👥 ${totalViewers.toLocaleString('es-ES')} Espectadores`
     : `● No hay torneos activos en este momento · 👥 ${totalViewers.toLocaleString('es-ES')} Espectadores`
+
 
   const primaryColor = settings.primary_color || '#00F5FF'
   const secondaryColor = settings.secondary_color || '#BD00FF'
