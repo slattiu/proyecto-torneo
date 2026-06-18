@@ -1406,24 +1406,7 @@ export function LeaderboardClient({
           })()}
         </div>
 
-      {streamUrl && (
-        <div className="w-full max-w-5xl mx-auto mb-8 rounded-2xl overflow-hidden border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,245,255,0.15)] bg-black/50 aspect-video relative">
-          <div className="absolute top-4 left-4 z-10 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest animate-pulse">
-            EN VIVO
-          </div>
-          <iframe 
-            src={
-              streamUrl.includes('twitch.tv') 
-                ? `https://player.twitch.tv/?channel=${streamUrl.split('/').pop()}&parent=${host}`
-                : streamUrl.includes('youtube.com/watch') || streamUrl.includes('youtu.be')
-                  ? `https://www.youtube.com/embed/${streamUrl.includes('youtu.be') ? streamUrl.split('/').pop() : new URL(streamUrl).searchParams.get('v')}`
-                  : streamUrl
-            }
-            className="w-full h-full border-0"
-            allowFullScreen
-          ></iframe>
-        </div>
-      )}
+
 
       {/* Tabs — scrollable on mobile */}
       <div className="flex gap-1 mb-6 sm:mb-8 sm:justify-center overflow-x-auto pb-1 px-2 sm:px-0 scrollbar-hide">
@@ -1510,6 +1493,24 @@ export function LeaderboardClient({
               </div>
             </div>
             <div className="lg:col-span-3 lg:sticky lg:top-24 space-y-6">
+              {streamUrl && (
+                <div className="w-full rounded-2xl overflow-hidden border border-neon-cyan/30 shadow-[0_0_20px_rgba(0,245,255,0.1)] bg-black/50 aspect-video relative">
+                  <div className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest animate-pulse">
+                    EN VIVO
+                  </div>
+                  <iframe 
+                    src={
+                      streamUrl.includes('twitch.tv') 
+                        ? `https://player.twitch.tv/?channel=${streamUrl.split('/').pop()}&parent=${host}`
+                        : streamUrl.includes('youtube.com/watch') || streamUrl.includes('youtu.be')
+                          ? `https://www.youtube.com/embed/${streamUrl.includes('youtu.be') ? streamUrl.split('/').pop() : new URL(streamUrl).searchParams.get('v')}`
+                          : streamUrl
+                    }
+                    className="w-full h-full border-0"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              )}
               <AdPlacement banners={adBanners || []} slotName="leaderboard_sidebar" tournamentId={tournamentId} />
             </div>
           </div>
