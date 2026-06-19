@@ -36,7 +36,9 @@ export function NicknameModal({ onComplete }: NicknameModalProps) {
     setLoading(true)
     setError('')
     try {
-      const res = await updateProfile({ username: trimmed })
+      const fd = new FormData()
+      fd.append('username', trimmed)
+      const res = await updateProfile(fd)
       if (res && 'error' in res) {
         setError(res.error || 'Error al guardar el nickname.')
       } else {

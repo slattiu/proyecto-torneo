@@ -1,6 +1,6 @@
 'use server'
 
-import { createAdminClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { isAdmin } from './auth-helpers'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'

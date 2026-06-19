@@ -15,6 +15,7 @@ interface ProfileStatsClientProps {
   pointsHistory: any[]
   updateProfileForm?: React.ReactNode
   subscriptionCard: React.ReactNode
+  gameAccountsSection?: React.ReactNode
 }
 
 const GAME_NAMES: Record<string, string> = {
@@ -73,6 +74,7 @@ export function ProfileStatsClient({
   pointsHistory,
   updateProfileForm,
   subscriptionCard,
+  gameAccountsSection,
 }: ProfileStatsClientProps) {
   const [activeTab, setActiveTab] = useState<'inicio' | 'profile' | 'history' | 'badges' | 'stats' | 'friends'>('inicio')
   const [username, setUsername] = useState(profile?.username ?? '')
@@ -716,6 +718,7 @@ export function ProfileStatsClient({
               </form>
             </div>
             {subscriptionCard}
+            {gameAccountsSection}
           </>
         )}
 

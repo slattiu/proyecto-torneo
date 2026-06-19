@@ -637,7 +637,7 @@ export function TournamentForm({ onSuccess, initialData, tournamentId }: Tournam
                     focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/20 focus:outline-none
                     transition-all duration-150"
                 />
-                {errors.maxPointsLimit && <p className="text-red-400 text-xs mt-1">{errors.maxPointsLimit.message}</p>}
+                {errors.maxPointsLimit && <p className="text-red-400 text-xs mt-1">{String(errors.maxPointsLimit.message)}</p>}
               </div>
             )}
 
@@ -760,7 +760,7 @@ export function TournamentForm({ onSuccess, initialData, tournamentId }: Tournam
                 placeholder="Ej. 20 (Dejar vacío para ilimitados)"
                 className={inputClass}
               />
-              {errors.maxTeams && <p className="text-red-400 text-xs mt-1">{errors.maxTeams.message}</p>}
+              {errors.maxTeams && <p className="text-red-400 text-xs mt-1">{String(errors.maxTeams.message)}</p>}
             </div>
 
             <div>
@@ -825,7 +825,7 @@ export function TournamentForm({ onSuccess, initialData, tournamentId }: Tournam
                     placeholder="Ej. CLAVE123"
                     className={inputClass}
                   />
-                  {errors.registrationPassword && <p className="text-red-400 text-xs mt-1">{errors.registrationPassword.message}</p>}
+                  {errors.registrationPassword && <p className="text-red-400 text-xs mt-1">{String(errors.registrationPassword.message)}</p>}
                 </div>
               )}
             </div>
