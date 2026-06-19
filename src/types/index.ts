@@ -105,6 +105,7 @@ export interface Participant {
   classificationRank?: string;
   brAvgPlacement?: number;
   color?: string;
+  userId?: string;
 }
 
 export interface Submission {
