@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Match } from '@/types'
-import { updateMatch } from '@/lib/actions/matches'
+import { updateMatch, createMatch } from '@/lib/actions/matches'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 
@@ -15,6 +15,7 @@ export function MatchesManager({
 }) {
   const [matches, setMatches] = useState(initialMatches)
   const [saving, setSaving] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
 
   const encounters = matches.filter(m => !m.parentMatchId)
   const getRounds = (parentId: string) => matches.filter(m => m.parentMatchId === parentId)
@@ -38,6 +39,26 @@ export function MatchesManager({
       toast.success('Cambios guardados')
     }
     setSaving(null)
+  }
+
+  const handleAddMatch = async () => {
+    setCreating(true)
+    const maxNumber = encounters.reduce((max, m) => m.matchNumber > max ? m.matchNumber : max, 0)
+    const nextNumber = maxNumber + 1
+    const name = `Encuentro ${nextNumber}`
+
+    const res = await createMatch(tournamentId, {
+      name,
+      matchNumber: nextNumber,
+    })
+
+    if ('error' in res) {
+      toast.error(res.error)
+    } else {
+      setMatches(prev => [...prev, res.data])
+      toast.success(`Partida "${name}" creada con éxito`)
+    }
+    setCreating(false)
   }
 
   const handleStart = async (match: Match) => {
@@ -120,6 +141,19 @@ export function MatchesManager({
 
   return (
     <div className="space-y-6 pb-20">
+      <div className="flex items-center justify-between bg-white/[0.02] border border-white/5 p-4 rounded-2xl">
+        <span className="text-xs font-bold text-white/40 uppercase tracking-widest font-orbitron">
+          Secuencia de Encuentros
+        </span>
+        <button
+          onClick={handleAddMatch}
+          disabled={creating}
+          className="flex items-center gap-2 px-4 py-2 bg-neon-purple hover:bg-neon-purple/90 disabled:opacity-50 text-xs font-bold text-white rounded-xl transition-all border border-neon-purple/30 active:scale-95"
+        >
+          {creating ? 'Creando...' : '+ Agregar Encuentro'}
+        </button>
+      </div>
+
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 text-[10px] text-white/30 uppercase tracking-widest font-black px-1">
         <span className="flex items-center gap-1.5">

@@ -108,3 +108,75 @@ export async function updateMatch(
   revalidatePath(`/tournaments/${tournamentId}/matches`)
   return { success: true }
 }
+
+export async function createMatch(
+  tournamentId: string,
+  data: { name: string; matchNumber: number; isWarmup?: boolean; mapName?: string }
+): Promise<{ data: Match } | { error: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // Verify ownership or admin
+  const { data: tournament } = await supabase
+    .from('tournaments')
+    .select('creator_id')
+    .eq('id', tournamentId)
+    .single()
+
+  const { isAdmin } = await import('./auth-helpers')
+  const admin = await isAdmin()
+
+  if (!tournament || (!admin && tournament.creator_id !== user.id)) {
+    return { error: 'Sin permisos' }
+  }
+
+  const { data: newMatch, error } = await supabase
+    .from('matches')
+    .insert({
+      tournament_id: tournamentId,
+      name: data.name,
+      match_number: data.matchNumber,
+      is_warmup: data.isWarmup ?? false,
+      map_name: data.mapName || null,
+      is_completed: false,
+      is_active: false,
+    })
+    .select()
+    .single()
+
+  if (error) return { error: error.message }
+
+  const mapped: Match = {
+    id: newMatch.id,
+    tournamentId: newMatch.tournament_id,
+    name: newMatch.name,
+    matchNumber: newMatch.match_number,
+    isCompleted: newMatch.is_completed,
+    isWarmup: newMatch.is_warmup,
+    isActive: newMatch.is_active ?? false,
+    parentMatchId: newMatch.parent_match_id,
+    roundNumber: newMatch.round_number,
+    mapName: newMatch.map_name,
+    createdAt: newMatch.created_at,
+  }
+
+  // Push to AC
+  pushToAC('matches', 'upsert', {
+    id: newMatch.id,
+    tournamentId: newMatch.tournament_id,
+    name: newMatch.name,
+    matchNumber: newMatch.match_number,
+    roundNumber: newMatch.round_number,
+    mapName: newMatch.map_name,
+    isCompleted: newMatch.is_completed,
+    isActive: newMatch.is_active,
+    isWarmup: newMatch.is_warmup,
+    parentMatchId: newMatch.parent_match_id,
+  })
+
+  revalidatePath(`/t/[slug]`, 'page')
+  revalidatePath(`/tournaments/${tournamentId}/matches`)
+  
+  return { data: mapped }
+}
