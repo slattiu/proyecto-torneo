@@ -213,7 +213,7 @@ export function LeaderboardClient({
       const members = regParticipants.map((name, index) => ({
         displayName: name,
         userId: regParticipantUserIds[index] || undefined,
-        streamUrl: regParticipantStreams[index] || undefined,
+        streamUrl: index === 0 ? (regStreamUrl || undefined) : (regParticipantStreams[index] || undefined),
         // Solo el capitán (índice 0) lleva el game_id
         gameId: index === 0 ? regGameId : undefined,
         gameUsername: index === 0 ? regGameUsername : undefined,
@@ -270,6 +270,13 @@ export function LeaderboardClient({
     const hasRegEnded = regEnd ? now > regEnd : false
     return isFull || hasRegEnded || currentStatus === 'active'
   }, [currentTeams.length, maxTeams, registrationEndDate, currentStatus])
+
+  const captainTeam = useMemo(() => {
+    if (!currentUser) return null
+    return currentTeams.find((team: any) => 
+      (team.participants || []).some((p: any) => p.userId === currentUser.id && p.isCaptain)
+    )
+  }, [currentUser, currentTeams])
 
   useEffect(() => {
     setIsMounted(true)
@@ -1298,17 +1305,7 @@ export function LeaderboardClient({
                       <div className="absolute top-3 left-3 z-10 bg-red-600 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest animate-pulse">
                         EN VIVO
                       </div>
-                      <iframe 
-                        src={
-                          streamUrl.includes('twitch.tv') 
-                            ? `https://player.twitch.tv/?channel=${streamUrl.split('/').pop()}&parent=${host}`
-                            : streamUrl.includes('youtube.com/watch') || streamUrl.includes('youtu.be')
-                              ? `https://www.youtube.com/embed/${streamUrl.includes('youtu.be') ? streamUrl.split('/').pop() : new URL(streamUrl).searchParams.get('v')}`
-                              : streamUrl
-                        }
-                        className="w-full h-full border-0"
-                        allowFullScreen
-                      ></iframe>
+                      {renderStreamPlayer(streamUrl)}
                     </div>
                   )}
                 </div>
@@ -1524,17 +1521,7 @@ export function LeaderboardClient({
                   <div className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest animate-pulse">
                     EN VIVO
                   </div>
-                  <iframe 
-                    src={
-                      streamUrl.includes('twitch.tv') 
-                        ? `https://player.twitch.tv/?channel=${streamUrl.split('/').pop()}&parent=${host}`
-                        : streamUrl.includes('youtube.com/watch') || streamUrl.includes('youtu.be')
-                          ? `https://www.youtube.com/embed/${streamUrl.includes('youtu.be') ? streamUrl.split('/').pop() : new URL(streamUrl).searchParams.get('v')}`
-                          : streamUrl
-                    }
-                    className="w-full h-full border-0"
-                    allowFullScreen
-                  ></iframe>
+                  {renderStreamPlayer(streamUrl)}
                 </div>
               )}
               <AdPlacement banners={adBanners || []} slotName="leaderboard_sidebar" tournamentId={tournamentId} />
@@ -1588,13 +1575,14 @@ export function LeaderboardClient({
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {team.participants.map((p: any) => {
                       const hasStats = p.kdRatio != null || p.avgKills != null || p.classificationRank || p.brAvgPlacement != null
+                      const pStream = p.streamUrl || (p.isCaptain ? team.streamUrl : null)
                       return (
                       <div key={p.id} className="bg-white/[0.03] border border-white/5 rounded-xl overflow-hidden hover:border-white/10 transition-colors">
                         <div className="flex items-center gap-3 px-3 py-2.5">
                           {p.avatarUrl ? (
                             <img src={p.avatarUrl} alt="" className="w-9 h-9 rounded-lg object-contain shrink-0" style={{ background: 'transparent' }} />
                           ) : (
-                            <div className={`w-2 h-2 rounded-full shrink-0 ${p.streamUrl ? 'bg-red-500 animate-pulse' : 'bg-white/20'}`} />
+                            <div className={`w-2 h-2 rounded-full shrink-0 ${pStream ? 'bg-red-500 animate-pulse' : 'bg-white/20'}`} />
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
@@ -1609,12 +1597,12 @@ export function LeaderboardClient({
                                 <span className="text-[7px] text-white/30 uppercase font-black tracking-tighter">Kills</span>
                               </div>
                             )}
-                            {p.streamUrl && (
+                            {pStream && (
                               <div className="flex gap-1">
-                                <button onClick={() => handleWatchTeam(p.streamUrl)} title="Ver stream" className="p-1 bg-red-600/20 hover:bg-red-600/40 rounded text-red-400 transition-colors">
+                                <button onClick={() => handleWatchTeam(pStream)} title="Ver stream" className="p-1 bg-red-600/20 hover:bg-red-600/40 rounded text-red-400 transition-colors">
                                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                                 </button>
-                                <a href={p.streamUrl} target="_blank" rel="noreferrer" className="p-1 bg-white/5 hover:bg-white/10 rounded text-white/40 transition-colors">
+                                <a href={pStream} target="_blank" rel="noreferrer" className="p-1 bg-white/5 hover:bg-white/10 rounded text-white/40 transition-colors">
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                 </a>
                               </div>
@@ -1878,40 +1866,49 @@ export function LeaderboardClient({
               <h2 className={`${orbitron.className} text-2xl font-black text-white uppercase tracking-tighter`}>
                 Portal de Evidencias
               </h2>
-              <p className="text-white/40 text-xs uppercase tracking-widest font-bold">Selecciona tu equipo para subir capturas</p>
+              <p className="text-white/40 text-xs uppercase tracking-widest font-bold">Accede al panel para subir capturas</p>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {currentTeams.map(team => (
+          {!currentUser ? (
+            <div className="py-12 text-center border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
+              <p className="text-white/60 mb-4 text-sm font-semibold uppercase tracking-wider">Debes iniciar sesión para acceder al portal de tu equipo.</p>
               <Link 
-                key={team.id}
-                href={`/t/${slug}/team/${team.id}`}
-                className="group flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-neon-purple/10 border border-white/5 hover:border-neon-purple/50 rounded-2xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(176,38,255,0.15)]"
+                href={`/login?redirectTo=/t/${slug}`}
+                className="inline-block px-6 py-2.5 bg-neon-purple hover:bg-neon-purple/80 text-white font-orbitron font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-neon-purple/50"
               >
-                {team.avatarUrl ? (
-                  <img src={team.avatarUrl} alt={team.name} className="w-12 h-12 rounded-xl object-cover border border-white/10 group-hover:border-neon-purple/50 transition-colors" />
+                Iniciar Sesión
+              </Link>
+            </div>
+          ) : !captainTeam ? (
+            <div className="py-12 text-center border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
+              <p className="text-white/40 italic text-sm">Este portal es de acceso exclusivo para los capitanes de los equipos registrados.</p>
+            </div>
+          ) : (
+            <div className="max-w-md mx-auto">
+              <Link 
+                href={`/t/${slug}/team/${captainTeam.id}`}
+                className="group flex items-center gap-4 p-5 bg-white/[0.03] hover:bg-neon-purple/10 border border-white/5 hover:border-neon-purple/50 rounded-2xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(176,38,255,0.15)]"
+              >
+                {captainTeam.avatarUrl ? (
+                  <img src={captainTeam.avatarUrl} alt={captainTeam.name} className="w-14 h-14 rounded-xl object-cover border border-white/10 group-hover:border-neon-purple/50 transition-colors" />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl bg-white/5 group-hover:bg-neon-purple/20 border border-white/10 group-hover:border-neon-purple/30 flex items-center justify-center text-xl transition-colors">
+                  <div className="w-14 h-14 rounded-xl bg-white/5 group-hover:bg-neon-purple/20 border border-white/10 group-hover:border-neon-purple/30 flex items-center justify-center text-2xl transition-colors">
                     🎮
                   </div>
                 )}
-                <div>
-                  <h3 className="font-orbitron font-bold text-white group-hover:text-neon-purple transition-colors truncate max-w-[150px]">
-                    {team.name}
+                <div className="flex-1 min-w-0">
+                  <span className="text-[9px] text-neon-cyan font-bold uppercase tracking-widest block mb-1">Mi Equipo</span>
+                  <h3 className="font-orbitron font-bold text-lg text-white group-hover:text-neon-purple transition-colors truncate">
+                    {captainTeam.name}
                   </h3>
-                  <p className="text-[10px] text-white/40 uppercase tracking-widest group-hover:text-neon-purple/60 transition-colors mt-1">
-                    Acceder al Portal →
+                  <p className="text-xs text-white/40 uppercase tracking-widest group-hover:text-neon-purple/60 transition-colors mt-1">
+                    Ingresar al Portal →
                   </p>
                 </div>
               </Link>
-            ))}
-            {currentTeams.length === 0 && (
-              <div className="col-span-full py-12 text-center border border-dashed border-white/10 rounded-2xl">
-                <p className="text-white/20 italic">Aún no hay equipos inscritos en este torneo.</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </motion.div>
       ) : null}
         <AnimatePresence>
