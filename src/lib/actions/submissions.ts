@@ -15,21 +15,6 @@ export async function createSubmission(
   }
 
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'No autenticado' }
-
-  // Verify that the logged-in user belongs to the team they are submitting for
-  const { data: isMember } = await supabase
-    .from('participants')
-    .select('id')
-    .eq('team_id', parsed.data.teamId)
-    .eq('user_id', user.id)
-    .eq('tournament_id', parsed.data.tournamentId)
-    .maybeSingle()
-
-  if (!isMember) {
-    return { error: 'No tienes permisos para enviar datos para este equipo (debes ser miembro del equipo)' }
-  }
 
   // Check if match exists and tournament is active
   const { data: match, error: matchErr } = await supabase
