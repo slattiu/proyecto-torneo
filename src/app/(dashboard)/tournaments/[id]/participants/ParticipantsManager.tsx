@@ -69,6 +69,7 @@ export function ParticipantsManager({
   const [editColor, setEditColor] = useState('')
   const [editStreamUrl, setEditStreamUrl] = useState('')
   const [editStatsLoading, setEditStatsLoading] = useState(false)
+  const [editIsCaptain, setEditIsCaptain] = useState(false)
   const [editDisplayName, setEditDisplayName] = useState('')
   const [editShortId, setEditShortId] = useState('')
   const [linkedUser, setLinkedUser] = useState<{ id: string, username: string, avatarUrl?: string, shortId?: string } | null>(null)
@@ -213,6 +214,7 @@ export function ParticipantsManager({
     setEditColor(p.color ?? '')
     setEditStreamUrl(p.streamUrl ?? '')
     setEditDisplayName(p.displayName || '')
+    setEditIsCaptain(p.isCaptain ?? false)
     setEditShortId('')
     setSearchError('')
     setSearchLoading(false)
@@ -269,6 +271,7 @@ export function ParticipantsManager({
       streamUrl:          editStreamUrl   || null,
       userId:             linkedUser ? linkedUser.id : null,
       avatarUrl:          linkedUser ? (linkedUser.avatarUrl || null) : editingStats.avatarUrl,
+      isCaptain:          editIsCaptain,
     } as any)
     if ('error' in res) {
       toast.error(res.error)
@@ -284,18 +287,31 @@ export function ParticipantsManager({
           streamUrl: editStreamUrl || undefined
         } : t))
       }
-      setParticipants(participants.map(p => p.id === editingStats.id ? {
-        ...p,
-        displayName:        editDisplayName.trim() || p.displayName,
-        avatarUrl:          linkedUser ? (linkedUser.avatarUrl || undefined) : p.avatarUrl,
-        userId:             linkedUser ? linkedUser.id : undefined,
-        kdRatio:            editKd          ? Number(editKd)          : undefined,
-        avgKills:           editAvgKills     ? Number(editAvgKills)     : undefined,
-        classificationRank: editRank         || undefined,
-        brAvgPlacement:     editBrPlacement  ? Number(editBrPlacement)  : undefined,
-        color:              editColor       || undefined,
-        streamUrl:          editStreamUrl   || undefined,
-      } : p))
+      setParticipants(participants.map(p => {
+        if (p.id === editingStats.id) {
+          return {
+            ...p,
+            displayName:        editDisplayName.trim() || p.displayName,
+            avatarUrl:          linkedUser ? (linkedUser.avatarUrl || undefined) : p.avatarUrl,
+            userId:             linkedUser ? linkedUser.id : undefined,
+            kdRatio:            editKd          ? Number(editKd)          : undefined,
+            avgKills:           editAvgKills     ? Number(editAvgKills)     : undefined,
+            classificationRank: editRank         || undefined,
+            brAvgPlacement:     editBrPlacement  ? Number(editBrPlacement)  : undefined,
+            color:              editColor       || undefined,
+            streamUrl:          editStreamUrl   || undefined,
+            isCaptain:          editIsCaptain,
+          }
+        }
+        // Demote other captains in same team if this one was promoted
+        if (editIsCaptain && p.teamId === editingStats.teamId && p.id !== editingStats.id) {
+          return {
+            ...p,
+            isCaptain: false,
+          }
+        }
+        return p
+      }))
       toast.success('Participante actualizado')
       setEditingStats(null)
     }
@@ -743,6 +759,21 @@ export function ParticipantsManager({
                 className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-neon-cyan/50" 
               />
             </div>
+
+            {!isIndividual && (
+              <div className="mb-4 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="editIsCaptain"
+                  checked={editIsCaptain}
+                  onChange={e => setEditIsCaptain(e.target.checked)}
+                  className="rounded border-white/10 bg-black/40 text-neon-cyan focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                />
+                <label htmlFor="editIsCaptain" className="text-xs text-white/80 font-bold select-none cursor-pointer flex items-center gap-1">
+                  <span>Capitán del Equipo</span> 👑
+                </label>
+              </div>
+            )}
 
             <div className="mb-4 border-t border-white/5 pt-4">
               <label className="block text-[9px] text-neon-purple uppercase tracking-widest font-bold mb-1.5">Cuenta Vinculada (Sustitución)</label>

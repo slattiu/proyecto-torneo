@@ -390,13 +390,32 @@ export async function updateParticipant(
   }
 
   const d = data as any
+
+  // If setting this participant as captain, demote other captains in the same team first
+  if (d.isCaptain) {
+    const { data: currentPart } = await supabase
+      .from('participants')
+      .select('team_id')
+      .eq('id', participantId)
+      .eq('tournament_id', tournamentId)
+      .single()
+
+    if (currentPart?.team_id) {
+      await supabase
+        .from('participants')
+        .update({ is_captain: false })
+        .eq('team_id', currentPart.team_id)
+        .eq('tournament_id', tournamentId)
+    }
+  }
+
   const { data: participant, error: updateErr } = await supabase
     .from('participants')
     .update({
       display_name:          data.displayName,
       avatar_url:            d.avatarUrl,
       stream_url:            data.streamUrl,
-      is_captain:            data.isCaptain,
+      is_captain:            d.isCaptain,
       kd_ratio:              d.kdRatio        ?? null,
       avg_kills:             d.avgKills        ?? null,
       classification_rank:   d.classificationRank ?? null,
