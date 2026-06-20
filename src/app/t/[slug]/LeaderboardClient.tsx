@@ -274,7 +274,7 @@ export function LeaderboardClient({
   const captainTeam = useMemo(() => {
     if (!currentUser) return null
     return currentTeams.find((team: any) => 
-      (team.participants || []).some((p: any) => p.userId === currentUser.id && p.isCaptain)
+      (team.participants || []).some((p: any) => p.userId === currentUser.id)
     )
   }, [currentUser, currentTeams])
 
@@ -1905,7 +1905,7 @@ export function LeaderboardClient({
             </div>
           ) : !captainTeam ? (
             <div className="py-12 text-center border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
-              <p className="text-white/40 italic text-sm">Este portal es de acceso exclusivo para los capitanes de los equipos registrados.</p>
+              <p className="text-white/40 italic text-sm">Este portal es de acceso exclusivo para los participantes de los equipos registrados.</p>
             </div>
           ) : (
             <div className="max-w-md mx-auto">

@@ -18,6 +18,19 @@ export async function createSubmission(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
+  // Verify that the logged-in user belongs to the team they are submitting for
+  const { data: isMember } = await supabase
+    .from('participants')
+    .select('id')
+    .eq('team_id', parsed.data.teamId)
+    .eq('user_id', user.id)
+    .eq('tournament_id', parsed.data.tournamentId)
+    .maybeSingle()
+
+  if (!isMember) {
+    return { error: 'No tienes permisos para enviar datos para este equipo (debes ser miembro del equipo)' }
+  }
+
   // Check if match exists and tournament is active
   const { data: match, error: matchErr } = await supabase
     .from('matches')
@@ -67,7 +80,11 @@ export async function createSubmission(
     }
   }
 
-  const { data: submission, error: subErr } = await supabase
+  // Use admin client to bypass the captain-only database RLS insert policy, 
+  // since we have already validated team membership server-side.
+  const adminSupabase = await createAdminClient()
+
+  const { data: submission, error: subErr } = await adminSupabase
     .from('submissions')
     .insert({
       tournament_id: parsed.data.tournamentId,
@@ -86,7 +103,7 @@ export async function createSubmission(
   if (subErr) return { error: subErr.message }
 
   if (parsed.data.evidence) {
-    const { error: evErr } = await supabase
+    const { error: evErr } = await adminSupabase
       .from('evidence_files')
       .insert({
         submission_id: submission.id,
