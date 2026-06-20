@@ -28,6 +28,7 @@ export default async function TeamPortalPage({
     .from('teams')
     .select('*')
     .eq('id', normalizedTeamId)
+    .eq('tournament_id', tournament.id)
     .single()
 
   if (teamErr || !team) notFound()
