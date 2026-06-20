@@ -101,11 +101,14 @@ export async function deleteTeam(
 
   const { data: tournament } = await supabase
     .from('tournaments')
-    .select('id')
+    .select('id, creator_id')
     .eq('id', tournamentId)
     .single()
 
-  if (await assertAdmin(supabase, user.id)) {
+  if (!tournament) return { error: 'Torneo no encontrado' }
+
+  const admin = await assertAdmin(supabase, user.id)
+  if (admin && tournament.creator_id !== user.id) {
     return { error: 'Sin permisos' }
   }
 

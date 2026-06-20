@@ -146,6 +146,45 @@ export function SubmissionsManager({
     }
   }
 
+  const handleDeleteTeam = async (teamId: string, teamName: string) => {
+    const confirmDelete = confirm(`¿Estás seguro de que deseas eliminar permanentemente al equipo "${teamName}"? Se borrarán todos sus participantes registrados.`)
+    if (!confirmDelete) return
+    
+    setLoadingId(teamId)
+    try {
+      const { deleteTeam } = await import('@/lib/actions/participants')
+      const res = await deleteTeam(tournamentId, teamId)
+      if ('error' in res) throw new Error(res.error)
+      
+      alert(`Equipo "${teamName}" eliminado exitosamente.`)
+      // Refresh window to re-fetch teams and recalculate standings
+      window.location.reload()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
+  const handleBanTeam = async (teamId: string, teamName: string) => {
+    const confirmBan = confirm(`¿Estás seguro de que deseas BANEAR a todos los integrantes de "${teamName}" por abandono? Esto los eliminará del torneo y les impedirá inscribirse en los siguientes 3 torneos.`)
+    if (!confirmBan) return
+    
+    setLoadingId(teamId)
+    try {
+      const { banTeamForAbandonment } = await import('@/lib/actions/bans')
+      const res = await banTeamForAbandonment(tournamentId, teamId)
+      if ('error' in res) throw new Error(res.error)
+      
+      alert(`Equipo "${teamName}" baneado y eliminado exitosamente.`)
+      window.location.reload()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
   // Parse arrays if Supabase returned un-unwrapped values due to 1:M assumptions when we select from views
   const getTeamName = (s: PendingSubmission) => Array.isArray(s.teams) ? s.teams[0]?.name : s.teams?.name || 'Equipo desconocido'
   const getMatchName = (s: PendingSubmission) => Array.isArray(s.matches) ? s.matches[0]?.name : s.matches?.name || 'Partida'
@@ -207,7 +246,7 @@ export function SubmissionsManager({
               </div>
 
               {missingTeams.length > 0 && (
-                <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-4 space-y-2">
+                <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-4 space-y-3">
                   <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -215,11 +254,33 @@ export function SubmissionsManager({
                     </span>
                     Falta evidencia de {missingTeams.length} {missingTeams.length === 1 ? 'equipo' : 'equipos'}:
                   </h4>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-3">
                     {missingTeams.map(t => (
-                      <span key={t.id} className="text-xs px-2 py-0.5 bg-red-950/20 border border-red-900/30 text-red-300 rounded font-medium">
-                        {t.name}
-                      </span>
+                      <div key={t.id} className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-950/20 border border-red-900/30 text-red-300 rounded-lg">
+                        <span className="text-xs font-semibold">{t.name}</span>
+                        <div className="flex items-center gap-1 border-l border-red-900/40 pl-2 ml-1">
+                          <button
+                            onClick={() => handleDeleteTeam(t.id, t.name)}
+                            disabled={loadingId === t.id}
+                            className="p-1 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
+                            title="Eliminar Equipo"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleBanTeam(t.id, t.name)}
+                            disabled={loadingId === t.id}
+                            className="p-1 text-red-500 hover:text-red-300 hover:bg-red-500/20 rounded transition-all"
+                            title="Banear por Abandono"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
