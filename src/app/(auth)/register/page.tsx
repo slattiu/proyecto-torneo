@@ -7,6 +7,10 @@ import { useState } from 'react'
 
 const registerSchema = z
   .object({
+    username: z.string()
+      .min(3, 'El nombre de usuario debe tener al menos 3 caracteres')
+      .max(30, 'El nombre de usuario no puede exceder los 30 caracteres')
+      .regex(/^[a-zA-Z0-9_]+$/, 'El nombre de usuario solo puede contener letras, números y guión bajo (_)'),
     email: z.string().email('Email inválido'),
     password: z.string().min(8, 'Mínimo 8 caracteres'),
     confirmPassword: z.string(),
@@ -36,6 +40,7 @@ export default function RegisterPage() {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     const form = e.currentTarget
     const result = registerSchema.safeParse({
+      username: (form.elements.namedItem('username') as HTMLInputElement).value,
       email: (form.elements.namedItem('email') as HTMLInputElement).value,
       password: (form.elements.namedItem('password') as HTMLInputElement).value,
       confirmPassword: (form.elements.namedItem('confirmPassword') as HTMLInputElement).value,
@@ -93,6 +98,20 @@ export default function RegisterPage() {
         <h2 className="text-white font-semibold text-xl mb-6">Crear cuenta</h2>
 
         <form action={action} onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="username" className="block text-sm text-white/60 mb-1.5">
+              Nombre de Usuario (Nickname)
+            </label>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 transition-colors"
+              placeholder="tu_nickname"
+            />
+          </div>
+
           <div>
             <label htmlFor="email" className="block text-sm text-white/60 mb-1.5">
               Email

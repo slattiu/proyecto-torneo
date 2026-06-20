@@ -8,6 +8,15 @@ const authSchema = z.object({
   password: z.string().min(8),
 })
 
+const signUpSchema = z.object({
+  username: z.string()
+    .min(3, 'El nombre de usuario debe tener al menos 3 caracteres')
+    .max(30, 'El nombre de usuario no puede exceder los 30 caracteres')
+    .regex(/^[a-zA-Z0-9_]+$/, 'El nombre de usuario solo puede contener letras, números y guión bajo (_)'),
+  email: z.string().email('Email inválido'),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+})
+
 export async function signIn(
   _prevState: { error?: string } | null,
   formData: FormData
@@ -42,21 +51,40 @@ export async function signUp(
   _prevState: { error?: string; success?: string } | null,
   formData: FormData
 ): Promise<{ error: string } | { success: string }> {
-  const parsed = authSchema.safeParse({
+  const parsed = signUpSchema.safeParse({
+    username: formData.get('username'),
     email: formData.get('email'),
     password: formData.get('password'),
   })
-  if (!parsed.success) return { error: 'Email o contraseña inválidos' }
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0].message }
+  }
 
   const supabase = await createClient()
+
+  // Verify username uniqueness manually before signup to give immediate feedback
+  const { data: existingProfile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('username', parsed.data.username)
+    .maybeSingle()
+
+  if (existingProfile) {
+    return { error: 'El nombre de usuario ya está en uso' }
+  }
+
   const { error } = await supabase.auth.signUp({
-    ...parsed.data,
+    email: parsed.data.email,
+    password: parsed.data.password,
     options: {
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      data: {
+        username: parsed.data.username,
+      },
     },
   })
   if (error) return { error: error.message }
-  return { success: 'Revisa tu email para confirmar tu cuenta' }
+  return { success: 'Revisa tu email para confirmar tu cuenta y activar tu perfil.' }
 }
 
 export async function resendVerificationEmail(
