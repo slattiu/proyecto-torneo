@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { approveSubmission, rejectSubmission } from '@/lib/actions/submissions'
+import { approveSubmission, rejectSubmission, updateSubmissionAction } from '@/lib/actions/submissions'
 
 type EvidenceFile = {
   id: string
@@ -23,13 +23,14 @@ type PendingSubmission = {
   status: 'pending' | 'approved' | 'rejected'
   rejection_reason?: string
   submitted_at: string
-  teams?: { name: string } | { name: string }[]
+  teams?: { name: string; participants?: { id: string; display_name: string }[] } | { name: string; participants?: { id: string; display_name: string }[] }[]
   matches?: { name: string; match_number: number } | { name: string; match_number: number }[]
   evidence_files?: EvidenceFile[]
   ai_status?: 'pending' | 'processing' | 'completed' | 'failed'
   ai_data?: { team_name?: string; kill_count?: number; rank?: number }
   ai_confidence?: number
   ai_error?: string
+  player_kills?: Record<string, number>
 }
 
 function getEvidenceUrl(storagePath: string): string {
@@ -50,6 +51,67 @@ export function SubmissionsManager({
 }) {
   const [submissions, setSubmissions] = useState(initialSubmissions)
   const [loadingId, setLoadingId] = useState<string | null>(null)
+
+  const [editingSub, setEditingSub] = useState<PendingSubmission | null>(null)
+  const [editKills, setEditKills] = useState<number>(0)
+  const [editRank, setEditRank] = useState<number | null>(null)
+  const [editPotTop, setEditPotTop] = useState<boolean>(false)
+  const [editPlayerKills, setEditPlayerKills] = useState<Record<string, number>>({})
+
+  const openEditSubmission = (sub: PendingSubmission) => {
+    setEditingSub(sub)
+    setEditKills(sub.kill_count)
+    setEditRank(sub.rank || null)
+    setEditPotTop(sub.pot_top || false)
+    
+    // Initialize player kills. If a player is not in player_kills, default to 0.
+    const pKills: Record<string, number> = {}
+    const teamObj: any = Array.isArray(sub.teams) ? sub.teams[0] : sub.teams
+    const teamParticipants = teamObj?.participants || []
+    
+    teamParticipants.forEach((p: any) => {
+      pKills[p.id] = sub.player_kills?.[p.id] || 0
+    })
+    
+    setEditPlayerKills(pKills)
+  }
+
+  const handlePlayerKillChange = (pId: string, val: string) => {
+    const num = parseInt(val, 10) || 0
+    const nextPlayerKills = { ...editPlayerKills, [pId]: num }
+    setEditPlayerKills(nextPlayerKills)
+    
+    // Automatically calculate the sum
+    const total = Object.values(nextPlayerKills).reduce((a, b) => a + b, 0)
+    setEditKills(total)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingSub) return
+    setLoadingId(editingSub.id)
+    try {
+      const res = await updateSubmissionAction(editingSub.id, {
+        killCount: editKills,
+        rank: editRank,
+        potTop: editPotTop,
+        playerKills: editPlayerKills,
+      })
+      if ('error' in res) throw new Error(res.error)
+      
+      setSubmissions(submissions.map(s => s.id === editingSub.id ? {
+        ...s,
+        kill_count: editKills,
+        rank: editRank || undefined,
+        pot_top: editPotTop,
+        player_kills: editPlayerKills,
+      } : s))
+      setEditingSub(null)
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setLoadingId(null)
+    }
+  }
 
   const handleApprove = async (id: string) => {
     setLoadingId(id)
@@ -223,6 +285,16 @@ export function SubmissionsManager({
                                {sub.status === 'pending' && (
                                  <>
                                    <button
+                                     onClick={() => openEditSubmission(sub)}
+                                     disabled={loadingId === sub.id}
+                                     className="p-1.5 text-white/50 hover:text-neon-cyan hover:bg-neon-cyan/10 rounded transition-colors"
+                                     title="Editar"
+                                   >
+                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                     </svg>
+                                   </button>
+                                   <button
                                      onClick={() => handleApprove(sub.id)}
                                      disabled={loadingId === sub.id}
                                      className="p-1.5 text-white/50 hover:text-green-400 hover:bg-green-400/10 rounded transition-colors"
@@ -255,6 +327,112 @@ export function SubmissionsManager({
             </div>
           )
         })
+      )}
+
+      {/* Edit Submission Modal */}
+      {editingSub && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-dark-card border border-white/10 rounded-2xl p-6 space-y-6 shadow-2xl animate-fade-in">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <h3 className="font-orbitron font-bold text-lg text-white">
+                Editar Información de Envío
+              </h3>
+              <button
+                onClick={() => setEditingSub(null)}
+                className="text-white/40 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+              <div>
+                <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2">
+                  Rango/Posición del Equipo
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editRank || ''}
+                  onChange={(e) => {
+                    const val = e.target.value ? parseInt(e.target.value, 10) : null
+                    setEditRank(val)
+                    if (val === 1) {
+                      setEditPotTop(true)
+                    }
+                  }}
+                  className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:border-neon-cyan focus:outline-none transition-colors"
+                  placeholder="Ej: 1, 2, 3..."
+                />
+              </div>
+
+              <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
+                <input
+                  id="potTop"
+                  type="checkbox"
+                  checked={editPotTop}
+                  onChange={(e) => setEditPotTop(e.target.checked)}
+                  className="w-4 h-4 rounded border-white/10 bg-white/[0.03] text-neon-cyan focus:ring-neon-cyan"
+                />
+                <label htmlFor="potTop" className="text-sm font-medium text-white/80 select-none">
+                  ¿Potencial Top / Victoria? (Top 1)
+                </label>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-4 border-b border-white/5 pb-2">
+                  Kills por Jugador (Suma automática)
+                </h4>
+                <div className="space-y-3">
+                  {(() => {
+                    const teamObj: any = Array.isArray(editingSub.teams) ? editingSub.teams[0] : editingSub.teams
+                    const teamParticipants = teamObj?.participants || []
+                    if (teamParticipants.length === 0) {
+                      return <p className="text-xs text-white/30 italic">No se encontraron jugadores en el equipo.</p>
+                    }
+                    return teamParticipants.map((p: any) => (
+                      <div key={p.id} className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-white/80 font-medium truncate">{p.display_name}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={editPlayerKills[p.id] ?? 0}
+                          onChange={(e) => handlePlayerKillChange(p.id, e.target.value)}
+                          className="w-24 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2 text-right text-white focus:border-neon-cyan focus:outline-none transition-colors font-orbitron"
+                        />
+                      </div>
+                    ))
+                  })()}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-white/5">
+                <div className="flex justify-between items-center bg-neon-cyan/5 border border-neon-cyan/10 p-4 rounded-xl">
+                  <span className="text-xs font-bold text-neon-cyan uppercase tracking-wider">Kills Totales</span>
+                  <span className="font-orbitron font-black text-xl text-neon-cyan">{editKills}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-white/5 pt-4">
+              <button
+                onClick={() => setEditingSub(null)}
+                className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-semibold text-white/80 hover:text-white transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={loadingId === editingSub.id}
+                className="px-5 py-2.5 bg-neon-cyan hover:bg-neon-cyan-hover rounded-xl text-sm font-semibold text-dark-bg transition-all font-orbitron tracking-wider flex items-center gap-2 disabled:opacity-50"
+              >
+                {loadingId === editingSub.id ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

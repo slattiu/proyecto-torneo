@@ -420,7 +420,7 @@ export async function getSubmissions(
 
   const { data, error } = await supabase
     .from('submissions')
-    .select('*, teams(name), matches(name, match_number), evidence_files(*)')
+    .select('*, teams(name, participants(id, display_name)), matches(name, match_number), evidence_files(*)')
     .eq('tournament_id', tournamentId)
     .order('submitted_at', { ascending: false })
 
@@ -660,6 +660,55 @@ export async function syncTournamentViewers(supabase: any, tournamentId: string)
     console.error('Error syncing tournament viewers:', err)
     return 0
   }
+}
+
+export async function updateSubmissionAction(
+  submissionId: string,
+  data: {
+    killCount: number
+    rank?: number | null
+    potTop: boolean
+    playerKills: Record<string, number>
+  }
+): Promise<{ success: boolean } | { error: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // Verify tournament creator permission
+  const { data: submission, error: subErr } = await supabase
+    .from('submissions')
+    .select('tournament_id, status, tournaments!inner(creator_id)')
+    .eq('id', submissionId)
+    .single()
+
+  if (subErr || !submission) return { error: 'Envío no encontrado' }
+
+  const creatorId = Array.isArray(submission.tournaments) 
+    ? submission.tournaments[0]?.creator_id 
+    : (submission.tournaments as any)?.creator_id
+
+  if (creatorId !== user.id) return { error: 'Sin permisos' }
+
+  const adminSupabase = await createAdminClient()
+  const { error: updateErr } = await adminSupabase
+    .from('submissions')
+    .update({
+      kill_count: data.killCount,
+      rank: data.rank,
+      pot_top: data.potTop,
+      player_kills: data.playerKills,
+    })
+    .eq('id', submissionId)
+
+  if (updateErr) return { error: updateErr.message }
+
+  // Recalculate standings if this submission is approved, since scores might change!
+  if (submission.status === 'approved') {
+    await recalculateStandings(adminSupabase, submission.tournament_id)
+  }
+
+  return { success: true }
 }
 
 
