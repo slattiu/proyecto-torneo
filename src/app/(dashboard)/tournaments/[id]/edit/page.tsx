@@ -63,8 +63,13 @@ export default async function EditTournamentPage({ params }: EditTournamentPageP
           <div>
             <h2 className="text-white font-semibold text-lg">No se puede editar este torneo</h2>
             <p className="text-white/40 text-sm mt-2 max-w-md mx-auto">
-              Solo se permiten modificaciones mientras el torneo se encuentre en estado de <span className="text-neon-purple font-semibold">Borrador</span>. 
+              Solo se permiten modificaciones mientras el torneo se encuentre en estado de{' '}
+              <span className="text-neon-purple font-semibold">Borrador</span> o{' '}
+              <span className="text-neon-purple font-semibold">Anunciado</span>.
               Este torneo actualmente está {tournament.status === 'active' ? 'activo' : 'finalizado'}.
+              {tournament.status === 'finished' && (
+                <> Puedes <Link href={`/tournaments/${id}`} className="text-neon-cyan hover:underline">reactivarlo desde el resumen</Link> si necesitas reabrirlo.</>
+              )}
             </p>
           </div>
         </div>

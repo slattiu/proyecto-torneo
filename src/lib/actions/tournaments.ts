@@ -497,14 +497,17 @@ export async function finishTournament(
     const totalPrizes = Number(t.prize_1st) + Number(t.prize_2nd) + Number(t.prize_3rd) + Number(t.prize_mvp)
     const remainder = totalRevenue - totalPrizes
     
-    await supabase.from('tournament_financials').insert({
-      tournament_id: id,
-      total_revenue: totalRevenue,
-      total_prizes: totalPrizes,
-      remainder: remainder,
-      organizer_payout: remainder * (Number(t.organizer_split) / 100),
-      streamer_payout: remainder * (Number(t.streamer_split) / 100)
-    })
+    await supabase.from('tournament_financials').upsert(
+      {
+        tournament_id: id,
+        total_revenue: totalRevenue,
+        total_prizes: totalPrizes,
+        remainder: remainder,
+        organizer_payout: remainder * (Number(t.organizer_split) / 100),
+        streamer_payout: remainder * (Number(t.streamer_split) / 100),
+      },
+      { onConflict: 'tournament_id' }
+    )
   }
 
   // --- FEDERATION AUTO RANKING UPDATE ---
@@ -751,6 +754,59 @@ export async function finishTournament(
   revalidatePath('/tournaments')
   revalidatePath('/hall-of-fame')
   // Invalidate the public leaderboard page so the next visit gets fresh status
+  if (tournament.slug) revalidatePath(`/t/${tournament.slug}`)
+
+  return { success: true }
+}
+
+export async function reactivateTournament(
+  id: string
+): Promise<{ success: true } | { error: string }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  const { data: tournament, error: fetchErr } = await supabase
+    .from('tournaments')
+    .select('creator_id, status, slug, arena_betting_enabled, is_sanctioned')
+    .eq('id', id)
+    .single()
+
+  if (fetchErr || !tournament) return { error: 'Torneo no encontrado' }
+  if (tournament.creator_id !== user.id) return { error: 'Sin permisos' }
+  if (tournament.status !== 'finished') {
+    return { error: 'Solo se pueden reactivar torneos finalizados' }
+  }
+
+  const { error: reactivateErr } = await supabase
+    .from('tournaments')
+    .update({
+      status: 'active',
+      end_date: null,
+      arena_betting_status: tournament.arena_betting_enabled ? 'open' : 'closed',
+    })
+    .eq('id', id)
+
+  if (reactivateErr) return { error: reactivateErr.message }
+
+  if (tournament.is_sanctioned) {
+    const adminSupabase = await createAdminClient()
+    await adminSupabase
+      .from('sanctioned_cups')
+      .update({ status: 'active', end_date: null })
+      .eq('tournament_id', id)
+  }
+
+  const { data: reactivated } = await supabase.from('tournaments').select('*').eq('id', id).single()
+  if (reactivated) {
+    pushToAC('tournaments', 'upsert', mapTournamentRow(reactivated as Record<string, unknown>) as unknown as Record<string, unknown>)
+  }
+
+  revalidatePath(`/tournaments/${id}`)
+  revalidatePath('/tournaments')
+  revalidatePath('/hall-of-fame')
   if (tournament.slug) revalidatePath(`/t/${tournament.slug}`)
 
   return { success: true }

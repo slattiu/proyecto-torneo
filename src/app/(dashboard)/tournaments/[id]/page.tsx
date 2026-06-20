@@ -111,6 +111,7 @@ function QuickAction({
 // ─── Activate button (Client Component) ─────────────────────────────────────────
 import { ActivateTournamentButton } from './ActivateTournamentButton'
 import { FinishTournamentButton } from './FinishTournamentButton'
+import { ReactivateTournamentButton } from './ReactivateTournamentButton'
 import { PublishTournamentButton } from './PublishTournamentButton'
 import { TournamentBranding } from './TournamentBranding'
 import { VisibilityToggle } from './VisibilityToggle'
@@ -333,6 +334,29 @@ export default async function TournamentOverviewPage({
           </div>
         </div>
       </div>
+
+      {/* Finished → reactivate */}
+      {tournament.status === 'finished' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <div className="bg-dark-card border border-neon-cyan/10 rounded-2xl p-6">
+            <h2 className="text-sm font-semibold text-white mb-1">Reactivar Torneo</h2>
+            <p className="text-xs text-white/30 mb-4">
+              Vuelve a poner el torneo en estado activo para seguir gestionando partidas, submissions y el leaderboard en vivo.
+            </p>
+            <ReactivateTournamentButton id={id} />
+          </div>
+          <div className="bg-dark-card border border-gold/10 rounded-2xl p-6">
+            <h2 className="text-sm font-semibold text-white mb-1">Estado actual</h2>
+            <p className="text-xs text-white/30 mb-4">
+              Este torneo está finalizado. Si necesitas corregir resultados, reactívalo, haz los cambios y finalízalo de nuevo.
+            </p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gold/10 border border-gold/20 text-gold text-xs font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+              Finalizado
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Active action (Add Dynamic Match & Finish) */}
       {tournament.status === 'active' && (
